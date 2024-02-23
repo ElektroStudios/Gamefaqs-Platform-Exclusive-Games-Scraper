@@ -35,6 +35,8 @@ This Work relies on the following technologies and libraries:
 
 ## ⚠️ Disclaimer:
 
+‼️ USE THIS SOFTWARE AT YOUR OWN RISK. USING A CRAWLER MAY LEAD TO AN IP BAN FROM GAMEFAQS WEBSITE, PREVENTING YOU FROM HAVING ACCESS TO IT.
+
 This Work (the repository and the content provided through) is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the Work or the use or other dealings in the Work.
 
 This Work has no affiliation, approval or endorsement by Gamefaqs or its staff. Therefore, this work may not necessarily reflect the interests of Gamefaqs or its staff.
