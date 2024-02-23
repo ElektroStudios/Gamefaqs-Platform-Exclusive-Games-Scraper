@@ -1,0 +1,237 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7D156337-4C0A-4CDA-98A7-31403C387660}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <StartupObject>Program</StartupObject>
+    <RootNamespace>
+    </RootNamespace>
+    <AssemblyName>Gamefaqs Platform Exclusive Games Scraper</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <MyType>Console</MyType>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DocumentationFile>Gamefaqs Platform Exclusive Games Scraper.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DocumentationFile>Gamefaqs Platform Exclusive Games Scraper.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionCompare>Binary</OptionCompare>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionStrict>On</OptionStrict>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>Off</OptionInfer>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="HtmlAgilityPack, Version=1.11.58.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlAgilityPack.1.11.58\lib\Net45\HtmlAgilityPack.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Model\PlatformType.vb" />
+    <Compile Include="Model\PlatformBaseWithOnlineStore.vb" />
+    <Compile Include="Model\PlatformBase.vb" />
+    <Compile Include="Model\ExitCodes.vb" />
+    <Compile Include="Platforms\Home consoles\CreatiVision.vb" />
+    <Compile Include="Platforms\Home consoles\Channel F.vb" />
+    <Compile Include="Platforms\Home consoles\Cassette Vision.vb" />
+    <Compile Include="Platforms\Home consoles\Super Vision 8000.vb" />
+    <Compile Include="Platforms\Home consoles\Virtual Boy.vb" />
+    <Compile Include="Platforms\Personal Computers\Sord M5.vb" />
+    <Compile Include="Platforms\Handheld consoles\Microvision.vb" />
+    <Compile Include="Platforms\Home consoles\VC 4000.vb" />
+    <Compile Include="Platforms\Home consoles\Odyssey^2.vb" />
+    <Compile Include="Platforms\Home consoles\Odyssey.vb" />
+    <Compile Include="Platforms\Home consoles\Vectrex.vb" />
+    <Compile Include="Platforms\Personal Computers\Tandy Color Computer.vb" />
+    <Compile Include="Platforms\Personal Computers\Colour Genie 2000.vb" />
+    <Compile Include="Platforms\Home consoles\Amico.vb" />
+    <Compile Include="Platforms\Personal Computers\VIC-20.vb" />
+    <Compile Include="Platforms\Home consoles\Adventure Vision.vb" />
+    <Compile Include="Platforms\Home consoles\Arcadia 2001.vb" />
+    <Compile Include="Platforms\Home consoles\Astrocade.vb" />
+    <Compile Include="Platforms\Home consoles\Super Cassette Vision.vb" />
+    <Compile Include="Platforms\Home consoles\InteractiveVision.vb" />
+    <Compile Include="Platforms\Personal Computers\FM-7.vb" />
+    <Compile Include="Platforms\Home consoles\Casio PV-1000.vb" />
+    <Compile Include="Platforms\Personal Computers\RX-78.vb" />
+    <Compile Include="Platforms\Home consoles\3DO.vb" />
+    <Compile Include="Platforms\Home consoles\CPS Changer.vb" />
+    <Compile Include="Platforms\Handheld consoles\Game.com.vb" />
+    <Compile Include="Platforms\Home consoles\HyperScan.vb" />
+    <Compile Include="Platforms\Other\LaserActive.vb" />
+    <Compile Include="Platforms\Handheld consoles\Sega Pico.vb" />
+    <Compile Include="Platforms\Home consoles\Super A%27Can.vb" />
+    <Compile Include="Platforms\Handheld consoles\Watara Supervision.vb" />
+    <Compile Include="Platforms\Other\AmazonFireTV.vb" />
+    <Compile Include="Platforms\Home consoles\PC-Engine.vb" />
+    <Compile Include="Platforms\Home consoles\PC-Engine CD.vb" />
+    <Compile Include="Platforms\Personal Computers\Sharp X68000.vb" />
+    <Compile Include="Platforms\Home consoles\Mega-CD.vb" />
+    <Compile Include="Platforms\Home consoles\Mega Drive 32x.vb" />
+    <Compile Include="Platforms\Home consoles\Neo•Geo CD.vb" />
+    <Compile Include="Platforms\Home consoles\Neo•Geo AES.vb" />
+    <Compile Include="Platforms\Handheld consoles\Lynx.vb" />
+    <Compile Include="Platforms\Home consoles\Mega Drive.vb" />
+    <Compile Include="Platforms\Handheld consoles\Game Gear.vb" />
+    <Compile Include="Platforms\Home consoles\CD-I.vb" />
+    <Compile Include="Platforms\Personal Computers\Amiga.vb" />
+    <Compile Include="Platforms\Personal Computers\Archimedes.vb" />
+    <Compile Include="Platforms\Home consoles\Super Nintendo.vb" />
+    <Compile Include="Platforms\Home consoles\Action Max.vb" />
+    <Compile Include="Platforms\Home consoles\Sega Saturn.vb" />
+    <Compile Include="Platforms\Home consoles\GameCube.vb" />
+    <Compile Include="Platforms\Home consoles\Dreamcast.vb" />
+    <Compile Include="Platforms\Home consoles\Xbox.vb" />
+    <Compile Include="Platforms\Handheld consoles\PlayStation Portable %28PSP%29.vb" />
+    <Compile Include="Platforms\Home consoles\Wii.vb" />
+    <Compile Include="Platforms\Other\Unix - Linux.vb" />
+    <Compile Include="Platforms\Other\PC.vb" />
+    <Compile Include="Platforms\Handheld consoles\Nintendo DS.vb" />
+    <Compile Include="Platforms\Other\Macintosh.vb" />
+    <Compile Include="Platforms\Home consoles\Jaguar.vb" />
+    <Compile Include="Platforms\Home consoles\Xbox Series XS.vb" />
+    <Compile Include="Platforms\Handheld consoles\N-Gage.vb" />
+    <Compile Include="Platforms\Other\Arcade.vb" />
+    <Compile Include="Platforms\Handheld consoles\Evercade.vb" />
+    <Compile Include="Platforms\Home consoles\Amiga CD32.vb" />
+    <Compile Include="Platforms\Personal Computers\FM Towns.vb" />
+    <Compile Include="Platforms\Personal Computers\PC-FX.vb" />
+    <Compile Include="Platforms\Handheld consoles\GP32.vb" />
+    <Compile Include="Platforms\Handheld consoles\Neo•Geo Pocket.vb" />
+    <Compile Include="Platforms\Handheld consoles\Neo•Geo Pocket Color.vb" />
+    <Compile Include="Platforms\Home consoles\Jaguar CD.vb" />
+    <Compile Include="Platforms\Home consoles\Nintendo 64DD.vb" />
+    <Compile Include="Platforms\Home consoles\Nintendo 64.vb" />
+    <Compile Include="Platforms\Handheld consoles\Game Boy Advance.vb" />
+    <Compile Include="Platforms\Home consoles\Xbox 360.vb" />
+    <Compile Include="Platforms\Handheld consoles\Nintendo Switch.vb" />
+    <Compile Include="Platforms\Handheld consoles\Nintendo 3DS.vb" />
+    <Compile Include="Platforms\Handheld consoles\PlayStation Vita.vb" />
+    <Compile Include="Platforms\Other\Android.vb" />
+    <Compile Include="Platforms\Other\iOS.vb" />
+    <Compile Include="Platforms\Home consoles\Xbox One.vb" />
+    <Compile Include="Platforms\Handheld consoles\Wii-U.vb" />
+    <Compile Include="Platforms\Personal Computers\Atari ST.vb" />
+    <Compile Include="Platforms\Home consoles\Commodore 64.vb" />
+    <Compile Include="Platforms\Home consoles\Famicom Disk System.vb" />
+    <Compile Include="Platforms\Home consoles\MSX.vb" />
+    <Compile Include="Platforms\Personal Computers\PC-98.vb" />
+    <Compile Include="Platforms\Home consoles\NES.vb" />
+    <Compile Include="Platforms\Handheld consoles\Master System.vb" />
+    <Compile Include="Platforms\Personal Computers\Sharp X1.vb" />
+    <Compile Include="Platforms\Personal Computers\Spectrum.vb" />
+    <Compile Include="Platforms\Personal Computers\Amstrad CPC.vb" />
+    <Compile Include="Platforms\Personal Computers\PC-88.vb" />
+    <Compile Include="Platforms\Personal Computers\Atari 8-bit.vb" />
+    <Compile Include="Platforms\Personal Computers\Atari 7800.vb" />
+    <Compile Include="Platforms\Personal Computers\Atari 2600.vb" />
+    <Compile Include="Platforms\Personal Computers\Atari 5200.vb" />
+    <Compile Include="Platforms\Home consoles\Colecovision.vb" />
+    <Compile Include="Platforms\Home consoles\Intellivision.vb" />
+    <Compile Include="Platforms\Home consoles\SG-1000.vb" />
+    <Compile Include="Platforms\Personal Computers\Apple II.vb" />
+    <Compile Include="Platforms\Home consoles\PlayStation 5.vb" />
+    <Compile Include="Win32\NativeMethods.vb" />
+    <Compile Include="Platforms\Handheld consoles\GameBoy Color.vb" />
+    <Compile Include="Platforms\Home consoles\PlayStation 1.vb" />
+    <Compile Include="Platforms\Home consoles\PlayStation 2.vb" />
+    <Compile Include="Platforms\Home consoles\PlayStation 4.vb" />
+    <Compile Include="Platforms\Handheld consoles\WonderSwan Color.vb" />
+    <Compile Include="Platforms\Handheld consoles\WonderSwan.vb" />
+    <Compile Include="Win32\SafeWindowHandle.vb" />
+    <Compile Include="Utils\GamefaqsUtil.vb" />
+    <Compile Include="Model\GameInfo.vb" />
+    <Compile Include="Model\IPlatform.vb" />
+    <Compile Include="Utils\MiscUtil.vb" />
+    <Compile Include="Program.vb" />
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="Model\PlatformInfo.vb" />
+    <Compile Include="Platforms\Handheld consoles\GameBoy.vb" />
+    <Compile Include="Platforms\Home consoles\PlayStation 3.vb" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\app.ico" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+</Project>
