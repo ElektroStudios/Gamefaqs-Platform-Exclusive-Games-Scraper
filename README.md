@@ -2,7 +2,9 @@
 
 ### A console application that crawls exclusive video games released for the platforms specified on GameFAQs website to generate a table in Markdown format with the crawled titles.
 
-This application was used to build the contents of [Video game exclusivity catalogs for home consoles and other platforms 🎮](https://github.com/ElektroStudios/Video-Game-Consoles-Exclusive-Game-Lists) project.
+This application was employed to construct the tables within the following project:
+
+ - [Video game exclusivity catalogs for home consoles and other platforms 🎮](https://github.com/ElektroStudios/Video-Game-Consoles-Exclusive-Game-Lists)
 
 ------------------
 
