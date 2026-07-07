@@ -10,10 +10,10 @@ Imports System.Runtime.InteropServices
 ' Review the values of the assembly attributes
 
 <Assembly: AssemblyTitle("Gamefaqs Platform Exclusive Games Scraper")>
-<Assembly: AssemblyDescription("Gamefaqs Platform Exclusive Games Scraper")>
+<Assembly: AssemblyDescription("A command-line tool designed to scrape platform-exclusive video game titles directly from GameFAQs.")>
 <Assembly: AssemblyCompany("ElektroStudios")>
 <Assembly: AssemblyProduct("Gamefaqs Platform Exclusive Games Scraper")>
-<Assembly: AssemblyCopyright("Copyright © ElektroStudios 2024")>
+<Assembly: AssemblyCopyright("Copyright © ElektroStudios 2024-2026")>
 <Assembly: AssemblyTrademark("")>
 
 <Assembly: ComVisible(False)>
@@ -32,6 +32,6 @@ Imports System.Runtime.InteropServices
 ' by using the '*' as shown below:
 ' <Assembly: AssemblyVersion("1.0.*")>
 
-<Assembly: AssemblyVersion("1.0.0.0")>
-<Assembly: AssemblyFileVersion("1.0.0.0")>
+<Assembly: AssemblyVersion("1.0.1.0")>
+<Assembly: AssemblyFileVersion("1.0.1.0")>
 <Assembly: NeutralResourcesLanguage("en")>

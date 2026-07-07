@@ -36,7 +36,12 @@ Friend Module GamefaqsUtil
     ''' User-Agent used to let Gamefaqs server identify this scraper.
     ''' </summary>
     Friend Const ScraperUserAgent As String =
-            "Get_Platform_Exclusive_Games_Bot/1.0 (Windows; .NET Framework 4.8; non-harmful scraper; bot; scraper; en-US)"
+            "ExtractGamesListBot/1.0.1 (+https://github.com/ElektroStudios/Gamefaqs-Platform-Exclusive-Games-Scraper) BasedOnDotNetHttpClient"
+
+    ''' <summary>
+    ''' The text encoding used to create the output files (Markdown, URL, etc.).
+    ''' </summary>
+    Friend ReadOnly TextEncoding As Encoding = New UTF8Encoding(encoderShouldEmitUTF8Identifier:=True)
 
 #End Region
 
@@ -107,8 +112,8 @@ Friend Module GamefaqsUtil
     ''' </param>
     <DebuggerStepThrough>
     Friend Sub ScrapGames(description As String, platform As PlatformInfo, uri As Uri,
-                          ByRef refExclusiveGamesList As List(Of GameInfo),
-                          ByRef refMultiplatformGamesList As List(Of GameInfo))
+                    ByRef refExclusiveGamesList As List(Of GameInfo),
+                    ByRef refMultiplatformGamesList As List(Of GameInfo))
 
         refExclusiveGamesList = New List(Of GameInfo)
         refMultiplatformGamesList = New List(Of GameInfo)
@@ -507,7 +512,7 @@ Friend Module GamefaqsUtil
 
         Console.WriteLine($"Creating markdown file: {outputFilePath.Replace("\\?\", "")}...")
         Try
-            File.WriteAllText(outputFilePath, fullMarkdown, Encoding.UTF8)
+            File.WriteAllText(outputFilePath, fullMarkdown, TextEncoding)
 
         Catch ex As Exception
             MiscUtil.PrintErrorAndExit(ex.Message & Environment.NewLine &
@@ -560,7 +565,7 @@ Friend Module GamefaqsUtil
             ' Console.WriteLine($"Creating URL file: {outputFilePath.Replace("\\?\", "")}...")
 #End If
             Try
-                File.WriteAllText(outputFilePath, sb.ToString(), Encoding.UTF8)
+                File.WriteAllText(outputFilePath, sb.ToString(), TextEncoding)
 
             Catch ex As Exception
                 MiscUtil.PrintErrorAndExit(ex.Message & Environment.NewLine &

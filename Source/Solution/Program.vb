@@ -106,7 +106,7 @@ Friend Module Program
                 Dim outputUrlsDir As New DirectoryInfo($"{My.Application.Info.DirectoryPath}\Output\Urls")
                 If outputUrlsDir.Exists Then
                     Try
-                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(outputUrlsDir.FullName, FileIO.UIOption.OnlyErrorDialogs, FileIO.RecycleOption.DeletePermanently)
+                        FileIO.FileSystem.DeleteDirectory(outputUrlsDir.FullName, FileIO.UIOption.OnlyErrorDialogs, FileIO.RecycleOption.DeletePermanently)
                     Catch ex As Exception
                     End Try
                 End If
@@ -133,7 +133,7 @@ Friend Module Program
     <DebuggerStepperBoundary>
     Private Sub InitializeConsoleContext()
         Console.Title = $"{My.Application.Info.Title}" &
-                        $" v{My.Application.Info.Version.Major}.{My.Application.Info.Version.Minor}" &
+                        $" {My.Application.Info.Version.ToString(fieldCount:=3)}" &
                         $" | {My.Application.Info.Copyright}"
 
         Console.CursorVisible = True

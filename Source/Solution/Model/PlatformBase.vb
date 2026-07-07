@@ -128,7 +128,7 @@ _Multi-platform refers to the status of a video game being developed and release
     ''' <para></para>
     ''' The games that were released exclusively on this platform.
     ''' </summary>
-    Protected exclusiveGames_ As List(Of GameInfo)
+    Protected exclusiveGames_ As New List(Of GameInfo)
 
     ''' <summary>
     ''' Gets the multi-platform games that were released on this platform.
@@ -147,7 +147,7 @@ _Multi-platform refers to the status of a video game being developed and release
     ''' <para></para>
     ''' The multi-platform games that were released on this platform.
     ''' </summary>
-    Protected multiPlatformGames_ As List(Of GameInfo)
+    Protected multiPlatformGames_ As New List(Of GameInfo)
 
     ''' <summary>
     ''' Gets the game compilations that were released exclusively on this platform.
@@ -166,7 +166,7 @@ _Multi-platform refers to the status of a video game being developed and release
     ''' <para></para>
     ''' The game compilations that were released exclusively on this platform.
     ''' </summary>
-    Protected exclusiveCompilations_ As List(Of GameInfo)
+    Protected exclusiveCompilations_ As New List(Of GameInfo)
 
     ''' <summary>
     ''' Gets the multi-platform game compilations that were released on this platform.
@@ -185,7 +185,7 @@ _Multi-platform refers to the status of a video game being developed and release
     ''' <para></para>
     ''' The multi-platform game compilations that were released on this platform.
     ''' </summary>
-    Protected multiPlatformCompilations_ As List(Of GameInfo)
+    Protected multiPlatformCompilations_ As New List(Of GameInfo)
 
 #End Region
 
@@ -226,16 +226,16 @@ _Multi-platform refers to the status of a video game being developed and release
             )?.ToList()
 
         ' Filter out Exclusive Compilations from Exclusive Games list.
-        If exclusiveCompilations_?.Any() Then
+        If Me.exclusiveCompilations_?.Any() Then
             Dim exclusiveCompilationUrls As Uri() =
                 (From game As GameInfo In Me.exclusiveCompilations_
                  Select game.EntryUrl
-                ).ToArray()
+                )?.ToArray()
 
             Me.exclusiveGames_ =
                 (From game As GameInfo In Me.exclusiveGames_
                  Where Not exclusiveCompilationUrls.Contains(game.EntryUrl)
-                ).ToList()
+                )?.ToList()
         End If
 
         ' Build Multi-platform Compilations list.
@@ -245,16 +245,16 @@ _Multi-platform refers to the status of a video game being developed and release
             )?.ToList()
 
         ' Filter out Multi-platform Compilations from Multi-platform Games list.
-        If multiPlatformCompilations_?.Any() Then
+        If Me.multiPlatformCompilations_?.Any() Then
             Dim multiPlatformCompilationUrls As Uri() =
                 (From game As GameInfo In Me.multiPlatformCompilations_
                  Select game.EntryUrl
-                ).ToArray()
+                )?.ToArray()
 
             Me.multiPlatformGames_ =
                 (From game As GameInfo In Me.multiPlatformGames_
                  Where Not multiPlatformCompilationUrls.Contains(game.EntryUrl)
-                ).ToList()
+                )?.ToList()
         End If
 
         ' Sort lists in ascending order and using Natural Sort algorithm. 

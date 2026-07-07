@@ -13,8 +13,10 @@ Imports System.Diagnostics
 Imports System.IO
 Imports System.Linq
 Imports System.Net
+Imports System.Net.Http
 Imports System.Reflection
 Imports System.Text
+Imports System.Text.Json
 Imports System.Threading
 
 #End Region
@@ -34,6 +36,26 @@ Friend Module MiscUtil
     ''' a sequence of numbers that meet certain statistical requirements for randomness.
     ''' </summary>
     Private ReadOnly RandomGenerator As New Random(Seed:=Environment.TickCount)
+
+    ''' <summary>
+    ''' The endpoint URI for the FlareSolverr local service.
+    ''' </summary>
+    Private ReadOnly FlareSolverrUri As New Uri("http://localhost:8191/v1")
+
+    ''' <summary>
+    ''' The unique identifier for the persistent FlareSolverr scraping session.
+    ''' </summary>
+    Private Const ScraperSessionId As String = "GameFaqsPersistentSession"
+
+    ''' <summary>
+    ''' Tracks whether the FlareSolverr persistent session has been successfully initialized.
+    ''' </summary>
+    Private IsSessionInitialized As Boolean = False
+
+    ''' <summary>
+    ''' A shared <see cref="HttpClient"/> instance used to perform HTTP requests to the FlareSolverr service.
+    ''' </summary>
+    Private ReadOnly SharedClient As New HttpClient()
 
 #End Region
 
@@ -84,6 +106,57 @@ Friend Module MiscUtil
     End Sub
 
     ''' <summary>
+    ''' Initializes a long-lived browser session in FlareSolverr to keep Chrome open in the background.
+    ''' </summary>
+    ''' 
+    ''' <exception cref="InvalidOperationException">
+    ''' Thrown when the connection with the FlareSolverr instance fails, or when the service returns an unexpected status.
+    ''' </exception>
+    Private Sub EnsurePersistentSession()
+        If MiscUtil.IsSessionInitialized Then
+            Exit Sub
+        End If
+
+        Try
+            Dim destroySessionPayload As String = $"{{""cmd"": ""sessions.destroy"", ""session"": ""{MiscUtil.ScraperSessionId}""}}"
+            Using content As New StringContent(destroySessionPayload, Encoding.UTF8, "application/json")
+                Dim response As HttpResponseMessage = SharedClient.PostAsync(MiscUtil.FlareSolverrUri, content).GetAwaiter().GetResult()
+            End Using
+        Catch ex As Exception
+            ' Silent catch for cleanup routine.
+        End Try
+
+        Try
+            Dim createSessionPayload As String = $"{{""cmd"": ""sessions.create"", ""session"": ""{MiscUtil.ScraperSessionId}""}}"
+            Using content As New StringContent(createSessionPayload, Encoding.UTF8, "application/json")
+                Dim response As HttpResponseMessage = MiscUtil.SharedClient.PostAsync(MiscUtil.FlareSolverrUri, content).GetAwaiter().GetResult()
+
+                If response.IsSuccessStatusCode Then
+                    Dim jsonResponse As String =
+                        response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+
+                    Using doc As JsonDocument = JsonDocument.Parse(jsonResponse)
+                        Dim root As JsonElement = doc.RootElement
+                        Dim status As String = root.GetProperty("status").GetString()
+
+                        If String.Equals(status, "ok", StringComparison.OrdinalIgnoreCase) Then
+                            MiscUtil.IsSessionInitialized = True
+                        Else
+                            Throw New Exception($"Failed to create session. JSON: {jsonResponse}")
+                        End If
+                    End Using
+                Else
+                    Throw New HttpRequestException($"FlareSolverr responded with HTTP {(CInt(response.StatusCode))}.")
+                End If
+            End Using
+
+        Catch ex As Exception
+            Throw New InvalidOperationException("Could not establish connection with FlareSolverr background instance.", ex)
+
+        End Try
+    End Sub
+
+    ''' <summary>
     ''' Tries to download the HTML page source-code from the specified <see cref="Uri"/>. 
     ''' <para></para>
     ''' Whenever it fails to download, it prints the HTTP error code and waits the specified interval to retry again.
@@ -102,80 +175,111 @@ Friend Module MiscUtil
     ''' </param>
     <DebuggerStepThrough>
     Friend Sub DownloadHtmlPageWithRetry(uri As Uri, ByRef refHtmlPage As String,
-                                         Optional retryIntervalSeconds As Integer = 10)
+                                Optional retryIntervalSeconds As Integer = 10)
 
         refHtmlPage = Nothing
 
-        Using wc As New WebClient
+        Do While String.IsNullOrEmpty(refHtmlPage)
+            Try
+                ' Ensure session is alive at the start of every loop iteration.
+                MiscUtil.EnsurePersistentSession()
 
-            Do While String.IsNullOrEmpty(refHtmlPage)
-                wc.Headers.Remove(HttpRequestHeader.UserAgent)
-                wc.Headers.Add("User-Agent", GamefaqsUtil.ScraperUserAgent)
-                Try
-                    refHtmlPage = wc.DownloadString(uri)
+                Dim jsonPayload As String =
+                    $"{{""cmd"": ""request.get"", ""url"": ""{uri.AbsoluteUri}"", ""session"": ""{MiscUtil.ScraperSessionId}"", ""maxTimeout"": 60000}}"
 
-                Catch ex As WebException
-                    Dim response As HttpWebResponse = TryCast(ex.Response, HttpWebResponse)
-                    If response IsNot Nothing Then
+                Using content As New StringContent(jsonPayload, Encoding.UTF8, "application/json")
+                    Dim response As HttpResponseMessage = MiscUtil.SharedClient.PostAsync(MiscUtil.FlareSolverrUri, content).GetAwaiter().GetResult()
 
+                    If response.IsSuccessStatusCode Then
+                        Dim jsonResponse As String = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+                        Dim tempHtml As String = String.Empty
+
+                        Try
+                            ' Deterministic extraction
+                            Using doc As JsonDocument = JsonDocument.Parse(jsonResponse)
+                                Dim root As JsonElement = doc.RootElement
+                                Dim status As String = root.GetProperty("status").GetString()
+
+                                If String.Equals(status, "ok", StringComparison.OrdinalIgnoreCase) Then
+                                    Dim solution As JsonElement = root.GetProperty("solution")
+                                    tempHtml = solution.GetProperty("response").GetString()
+                                Else
+                                    Throw New Exception($"FlareSolverr status not 'ok'. JSON: {jsonResponse}")
+                                End If
+                            End Using
+
+                            If MiscUtil.IsCloudflareChallenge(tempHtml) Then
+                                Throw New Exception("Cloudflare 'Just a moment...' challenge detected in the HTML response.")
+                            End If
+
+                            ' If we reach this point, the HTML is pure and valid
+                            refHtmlPage = tempHtml
+
+                        Catch jsonEx As Exception
+                            Console.WriteLine($"[DEBUG] Parsing or Validation exception encountered: {jsonEx.Message}")
+                            ' Invalidate session to force a fresh browser instance on next retry.
+                            MiscUtil.IsSessionInitialized = False
+                        End Try
+                    End If
+
+                    If String.IsNullOrEmpty(refHtmlPage) Then
                         Dim statusCode As HttpStatusCode = response.StatusCode
-                        Console.WriteLine($"Remote server error: ({CInt(statusCode)}) {statusCode}.")
-                        Console.WriteLine($"Url: {uri}")
+                        Console.WriteLine($"FlareSolverr or remote server error: ({CInt(statusCode)}) {statusCode}.")
+                        Console.WriteLine($"Url: {uri.AbsoluteUri}")
 
                         Select Case statusCode
-
                             Case HttpStatusCode.NotFound
-                                MiscUtil.PrintErrorAndExit("This error indicates that the webpage or resource linked to by the URL does not exist." & Environment.NewLine &
-                                                           "Check Gamefaqs website or contact their support to explain this problem.",
+                                MiscUtil.PrintErrorAndExit($"This error indicates that the webpage or resource linked to by the URL does not exist.{Environment.NewLine}Check Gamefaqs website or contact their support to explain this problem.",
                                                            exitcode:=ExitCodes.ExitCodeHttpError)
 
                             Case HttpStatusCode.Forbidden
-                                MiscUtil.PrintErrorAndExit("This error may indicate that your IP address have been banned." & Environment.NewLine &
-                                                           "Check Gamefaqs website or contact their support to explain this problem.",
+                                MiscUtil.IsSessionInitialized = False
+                                MiscUtil.PrintErrorAndExit($"This error may indicate that your IP address have been banned.{Environment.NewLine}Check Gamefaqs website or contact their support to explain this problem.",
                                                            exitcode:=ExitCodes.ExitCodeHttpError)
 
                             Case Else
                                 Console.WriteLine($"Waiting {retryIntervalSeconds} seconds to retry again...")
                                 Console.WriteLine()
                                 Thread.Sleep(TimeSpan.FromSeconds(retryIntervalSeconds))
-
                         End Select
-
-                    Else
-                        Throw
-
                     End If
+                End Using
 
-                Catch ex As Exception
-                    Throw
+            Catch ex As Exception
+                ' Total fallback: invalidate session and retry
+                MiscUtil.IsSessionInitialized = False
+                Console.WriteLine($"[CRITICAL] Network exception: {ex.Message}")
+                Console.WriteLine($"Waiting {retryIntervalSeconds} seconds to retry again...")
+                Thread.Sleep(TimeSpan.FromSeconds(retryIntervalSeconds))
+            End Try
 
-                End Try
-            Loop
-
-        End Using
+            Thread.CurrentThread.Join(0) ' Prevents ContextSwitchDeadlock during long-running operations.
+        Loop
 
     End Sub
 
     ''' <summary>
-    ''' Converts the input string value to a valid file name that can be used in Windows OS,
-    ''' by replacing any unsupported characters in the string.
+    ''' String content validation to ensure the retrieved HTML is a expected GameFAQs webpage and not a Cloudflare protection layer.
     ''' </summary>
     ''' 
-    ''' <param name="value">
-    ''' The input string value.
+    ''' <param name="htmlContent">
+    ''' The raw HTML content to inspect.
     ''' </param>
     ''' 
     ''' <returns>
-    ''' The resulting file name that can be used in Windows OS.
+    ''' <see langword="True"/> if the HTML patterns match a known Cloudflare challenge or waiting room; otherwise, <see langword="False"/>.
     ''' </returns>
-    <DebuggerStepThrough>
-    Friend Function ConvertStringToWindowsFileName(value As String) As String
+    Private Function IsCloudflareChallenge(htmlContent As String) As Boolean
 
-        Return value.Replace("<", "˂").Replace(">", "˃").
-                     Replace("\", "⧹").Replace("/", "⧸").Replace("|", "ǀ").
-                     Replace(":", "∶").Replace("?", "ʔ").Replace("*", "✲").
-                     Replace(ControlChars.Quote, Char.ConvertFromUtf32(&H201D))
+        If String.IsNullOrEmpty(htmlContent) Then
+            Return False
+        End If
 
+        Dim containsJustAMoment As Boolean = (htmlContent.IndexOf("Just a moment...", StringComparison.OrdinalIgnoreCase) >= 0)
+        Dim containsCloudflare As Boolean = (htmlContent.IndexOf("Cloudflare", StringComparison.OrdinalIgnoreCase) >= 0)
+        Dim containsCloudflareChallenges As Boolean = (htmlContent.IndexOf("challenges.cloudflare", StringComparison.OrdinalIgnoreCase) >= 0)
+
+        Return (containsJustAMoment AndAlso containsCloudflare) OrElse (containsCloudflareChallenges)
     End Function
 
     ''' <summary>
@@ -218,6 +322,28 @@ Friend Module MiscUtil
                 Select platform
                 Order By platform.PlatformInfo.Name
                ).ToList()
+
+    End Function
+
+    ''' <summary>
+    ''' Converts the input string value to a valid file name that can be used in Windows OS,
+    ''' by replacing any unsupported characters in the string.
+    ''' </summary>
+    ''' 
+    ''' <param name="value">
+    ''' The input string value.
+    ''' </param>
+    ''' 
+    ''' <returns>
+    ''' The resulting file name that can be used in Windows OS.
+    ''' </returns>
+    <DebuggerStepThrough>
+    Friend Function ConvertStringToWindowsFileName(value As String) As String
+
+        Return value.Replace("<", "˂").Replace(">", "˃").
+                     Replace("\", "⧹").Replace("/", "⧸").Replace("|", "ǀ").
+                     Replace(":", "∶").Replace("?", "ʔ").Replace("*", "✲").
+                     Replace(ControlChars.Quote, Char.ConvertFromUtf32(&H201D))
 
     End Function
 
@@ -336,6 +462,10 @@ Friend Module MiscUtil
         End If
 
     End Sub
+
+#End Region
+
+#Region " Private Methods "
 
 #End Region
 
