@@ -1,4 +1,4 @@
-# Gamefaqs Platform Exclusive Games Scraper
+﻿# Gamefaqs Platform Exclusive Games Scraper
 
 ### A console application that crawls exclusive video games released for the platforms specified on GameFAQs website to generate a table in Markdown format with the crawled titles.
 
