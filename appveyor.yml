@@ -29,15 +29,15 @@ install:
 before_build:
   - >-
     nuget restore "Source\%APP_DIR_NAME%.%SOLUTION_EXT%"
-  - >-
-    dotnet nuget locals all --clear
 build:
   project: Source\%APP_DIR_NAME%.%SOLUTION_EXT%
   parallel: true
 after_build:
   - >-
     7z a -r "%APPVEYOR_PROJECT_NAME%_Build_%APPVEYOR_BUILD_NUMBER%.zip" ^
-    ".\Source\%APP_DIR_NAME%\bin\*" 
+    -i!"Source\*\bin\*"
+  - >-
+    dotnet nuget locals all --clear
 artifacts:
   - path: "%APPVEYOR_PROJECT_NAME%_Build_%APPVEYOR_BUILD_NUMBER%.zip"
     name: "%APPVEYOR_PROJECT_NAME%"
