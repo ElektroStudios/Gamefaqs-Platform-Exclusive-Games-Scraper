@@ -77,6 +77,7 @@ This tool was built to automate that heavy lifting and eliminate the manual copy
 ## 📝 Requirements
 
 - Microsoft Windows OS.
+- Starting from version 1.0.1, [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) is required, because GameFAQs introduced aggressive Cloudflare protection walls, which completely blocked HTTP web requests from downloading the game catalogs.
 
 ## 🚀 Getting Started
 
