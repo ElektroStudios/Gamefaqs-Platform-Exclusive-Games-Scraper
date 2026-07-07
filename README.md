@@ -20,7 +20,7 @@ windows
 
 This application was employed to construct the tables within the following project:
 
- - [Video game exclusivity catalogs for home consoles and other platforms 🎮](https://github.com/ElektroStudios/Video-Game-Consoles-Exclusive-Game-Lists)
+[Video game exclusivity catalogs for home consoles and other platforms 🎮](https://github.com/ElektroStudios/Video-Game-Consoles-Exclusive-Game-Lists)
 
 </div>
 
@@ -123,7 +123,7 @@ This Work relies on the following technologies and libraries:
  - [.NET Framework](https://dotnet.microsoft.com/en-us/download/dotnet-framework)
  - [Html Agility Pack](https://html-agility-pack.net/)
  - [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr)
- 
+
 ## ⚠️ Disclaimer
 
 > [!CAUTION]
