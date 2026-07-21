@@ -12,4 +12,3 @@ This release should be fully stable. It was able to scrap the game lists in Game
 
 ## v1.0 🔄
 Initial Release.
-
