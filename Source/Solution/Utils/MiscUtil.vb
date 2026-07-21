@@ -45,12 +45,24 @@ Friend Module MiscUtil
     ''' <summary>
     ''' The unique identifier for the persistent FlareSolverr scraping session.
     ''' </summary>
-    Private Const ScraperSessionId As String = "GameFaqsPersistentSession"
+    Private Const ScraperSessionId As String = "GameFAQsPersistentSession"
 
     ''' <summary>
     ''' Tracks whether the FlareSolverr persistent session has been successfully initialized.
     ''' </summary>
-    Private IsSessionInitialized As Boolean = False
+    Friend IsSessionInitialized As Boolean = False
+
+    ''' <summary>
+    ''' Keeps track of the total number of successful HTTP requests processed by the current FlareSolverr browser session.
+    ''' </summary>
+    Private ProcessedRequestsCount As Integer = 0
+
+    ''' <summary>
+    ''' Defines the maximum number of requests a single persistent FlareSolverr session can process before being rotated.
+    ''' <para></para>
+    ''' This threshold prevents Chromium memory leaks, performance degradation (bloat), and automated behavior tracking from Cloudflare.
+    ''' </summary>
+    Private Const MaxRequestsBeforeRotation As Integer = 1000
 
     ''' <summary>
     ''' A shared <see cref="HttpClient"/> instance used to perform HTTP requests to the FlareSolverr service.
@@ -141,6 +153,8 @@ Friend Module MiscUtil
 
                         If String.Equals(status, "ok", StringComparison.OrdinalIgnoreCase) Then
                             MiscUtil.IsSessionInitialized = True
+                            ' Reset the counter every time a fresh session is born.
+                            MiscUtil.ProcessedRequestsCount = 0
                         Else
                             Throw New Exception($"Failed to create session. JSON: {jsonResponse}")
                         End If
@@ -175,7 +189,7 @@ Friend Module MiscUtil
     ''' </param>
     <DebuggerStepThrough>
     Friend Sub DownloadHtmlPageWithRetry(uri As Uri, ByRef refHtmlPage As String,
-                                Optional retryIntervalSeconds As Integer = 10)
+                                Optional retryIntervalSeconds As Integer = 30)
 
         refHtmlPage = Nothing
 
@@ -185,7 +199,7 @@ Friend Module MiscUtil
                 MiscUtil.EnsurePersistentSession()
 
                 Dim jsonPayload As String =
-                    $"{{""cmd"": ""request.get"", ""url"": ""{uri.AbsoluteUri}"", ""session"": ""{MiscUtil.ScraperSessionId}"", ""maxTimeout"": 60000}}"
+                        $"{{""cmd"": ""request.get"", ""url"": ""{uri.AbsoluteUri}"", ""session"": ""{MiscUtil.ScraperSessionId}"", ""maxTimeout"": 60000}}"
 
                 Using content As New StringContent(jsonPayload, Encoding.UTF8, "application/json")
                     Dim response As HttpResponseMessage = MiscUtil.SharedClient.PostAsync(MiscUtil.FlareSolverrUri, content).GetAwaiter().GetResult()
@@ -195,7 +209,6 @@ Friend Module MiscUtil
                         Dim tempHtml As String = String.Empty
 
                         Try
-                            ' Deterministic extraction
                             Using doc As JsonDocument = JsonDocument.Parse(jsonResponse)
                                 Dim root As JsonElement = doc.RootElement
                                 Dim status As String = root.GetProperty("status").GetString()
@@ -212,8 +225,34 @@ Friend Module MiscUtil
                                 Throw New Exception("Cloudflare 'Just a moment...' challenge detected in the HTML response.")
                             End If
 
-                            ' If we reach this point, the HTML is pure and valid
+                            Dim isCategoryOrListPage As Boolean =
+                                    uri.AbsoluteUri.Contains("/category/") OrElse
+                                    uri.AbsoluteUri.Contains("/list/")
+
+                            If Not isCategoryOrListPage Then
+                                ' If the HTML doesn't contain the core container your parser expects, FlareSolverr failed to render it.
+                                If tempHtml.IndexOf("class=""content""", StringComparison.OrdinalIgnoreCase) = -1 AndAlso
+                                       tempHtml.IndexOf("class='content'", StringComparison.OrdinalIgnoreCase) = -1 Then
+                                    Throw New Exception("The retrieved HTML is missing the ""class='content'"". FlareSolverr returned an incomplete DOM. Forcing retry.")
+                                End If
+                            Else
+                                ' Validating Category pages (Ensure it didn't suffer a micro-cut mid-download).
+                                If tempHtml.IndexOf("</body>", StringComparison.OrdinalIgnoreCase) = -1 AndAlso
+                                       tempHtml.IndexOf("</footer>", StringComparison.OrdinalIgnoreCase) = -1 Then
+                                    Throw New Exception($"The retrieved category HTML is missing closing tags. FlareSolverr returned an incomplete DOM. Forcing retry.")
+                                End If
+                            End If
+
+                            ' If we reach this point, the HTML is pure, fully rendered and valid.
                             refHtmlPage = tempHtml
+
+                            ' Increment counter on success and force rotation if limit reached
+                            MiscUtil.ProcessedRequestsCount += 1
+                            If MiscUtil.ProcessedRequestsCount >= MiscUtil.MaxRequestsBeforeRotation Then
+                                Console.WriteLine()
+                                Console.WriteLine($"[INFO] Reached {MiscUtil.MaxRequestsBeforeRotation} requests. Rotating FlareSolverr session to free Chromium memory bloat...")
+                                MiscUtil.IsSessionInitialized = False
+                            End If
 
                         Catch jsonEx As Exception
                             Console.WriteLine($"[DEBUG] Parsing or Validation exception encountered: {jsonEx.Message}")
@@ -224,24 +263,47 @@ Friend Module MiscUtil
 
                     If String.IsNullOrEmpty(refHtmlPage) Then
                         Dim statusCode As HttpStatusCode = response.StatusCode
-                        Console.WriteLine($"FlareSolverr or remote server error: ({CInt(statusCode)}) {statusCode}.")
+                        Console.WriteLine($"FlareSolverr or remote server HTTP response: ({CInt(statusCode)}) {statusCode}.")
                         Console.WriteLine($"Url: {uri.AbsoluteUri}")
 
                         Select Case statusCode
                             Case HttpStatusCode.NotFound
-                                MiscUtil.PrintErrorAndExit($"This error indicates that the webpage or resource linked to by the URL does not exist.{Environment.NewLine}Check Gamefaqs website or contact their support to explain this problem.",
-                                                           exitcode:=ExitCodes.ExitCodeHttpError)
+                                MiscUtil.PrintErrorAndExit($"This error indicates that the webpage or resource linked to by the URL does not exist.{Environment.NewLine}Check GameFAQs website or contact their support to explain this problem.",
+                                                               exitcode:=ExitCodes.ExitCodeHttpError)
 
                             Case HttpStatusCode.Forbidden
                                 MiscUtil.IsSessionInitialized = False
-                                MiscUtil.PrintErrorAndExit($"This error may indicate that your IP address have been banned.{Environment.NewLine}Check Gamefaqs website or contact their support to explain this problem.",
-                                                           exitcode:=ExitCodes.ExitCodeHttpError)
+                                MiscUtil.PrintErrorAndExit($"This error may indicate that your IP address have been banned.{Environment.NewLine}Check GameFAQs website or contact their support to explain this problem.",
+                                                               exitcode:=ExitCodes.ExitCodeHttpError)
 
                             Case Else
                                 Console.WriteLine($"Waiting {retryIntervalSeconds} seconds to retry again...")
                                 Console.WriteLine()
                                 Thread.Sleep(TimeSpan.FromSeconds(retryIntervalSeconds))
                         End Select
+
+                    ElseIf (refHtmlPage.IndexOf("game_selector", StringComparison.OrdinalIgnoreCase) = -1 And
+                            refHtmlPage.IndexOf("game_desc", StringComparison.OrdinalIgnoreCase) = -1 And
+                            refHtmlPage.IndexOf("class=""title""", StringComparison.OrdinalIgnoreCase) = -1 And
+                            refHtmlPage.IndexOf("class=""content""", StringComparison.OrdinalIgnoreCase) = -1
+                           ) AndAlso
+                               (
+                                  (
+                                        refHtmlPage.IndexOf("traffic is blocked", StringComparison.OrdinalIgnoreCase) > 0 AndAlso
+                                        refHtmlPage.IndexOf("IP", StringComparison.OrdinalIgnoreCase) > 0
+                                      ) OrElse
+                                      (
+                                        refHtmlPage.IndexOf("IP", StringComparison.OrdinalIgnoreCase) > 0 AndAlso
+                                        refHtmlPage.IndexOf("banned", StringComparison.OrdinalIgnoreCase) > 0
+                                  )
+                               ) Then
+                        MiscUtil.PrintErrorAndExit($"Sorry, can't continue; Traffic from your IP address have been blocked on the GameFAQs server.{Environment.NewLine}Check GameFAQs website or contact their support to explain this problem.",
+                                                   exitcode:=ExitCodes.ExitCodeHttpError)
+
+                    ElseIf refHtmlPage.Length < 2000 OrElse
+                               refHtmlPage.IndexOf("GameFAQs", StringComparison.OrdinalIgnoreCase) = -1 Then
+                        Throw New Exception("The retrieved HTML is too short or malformed. FlareSolverr returned an incomplete DOM. Forcing retry.")
+
                     End If
                 End Using
 
@@ -275,7 +337,12 @@ Friend Module MiscUtil
             Return False
         End If
 
-        Dim containsJustAMoment As Boolean = (htmlContent.IndexOf("Just a moment...", StringComparison.OrdinalIgnoreCase) >= 0)
+        Dim containsJustAMoment As Boolean =
+            (htmlContent.IndexOf("Just a moment…", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+             htmlContent.IndexOf("Just a moment...", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+             htmlContent.IndexOf("Un momento…", StringComparison.OrdinalIgnoreCase) >= 0 OrElse
+             htmlContent.IndexOf("Un momento...", StringComparison.OrdinalIgnoreCase) >= 0)
+
         Dim containsCloudflare As Boolean = (htmlContent.IndexOf("Cloudflare", StringComparison.OrdinalIgnoreCase) >= 0)
         Dim containsCloudflareChallenges As Boolean = (htmlContent.IndexOf("challenges.cloudflare", StringComparison.OrdinalIgnoreCase) >= 0)
 

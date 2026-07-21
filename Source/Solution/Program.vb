@@ -16,6 +16,8 @@ Imports System.Linq
 Imports System.Text
 Imports System.Threading
 
+Imports DevCase.ThirdParty.Selenium
+
 Imports Win32
 Imports Win32.SafeHandles
 
@@ -83,40 +85,44 @@ Friend Module Program
         Console.WriteLine("")
         Console.CursorVisible = False
 
-        For i As Integer = 0 To platforms.Count - 1
+        Using consoleTerminationWatcher As New ConsoleTerminationWatcher(Sub() UtilFlareSolverr.KillFlareSolverrAndChildBrowsers())
 
-            Console.WriteLine($"{i + 1} of {platforms.Count} platforms | Running scraping work for platform: {platforms(i).PlatformInfo.Name}...")
-            Console.WriteLine("")
+            For i As Integer = 0 To platforms.Count - 1
 
-            If TypeOf platforms(i) Is PlatformBaseWithOnlineStore Then
-                Using platform As PlatformBaseWithOnlineStore = DirectCast(platforms(i), PlatformBaseWithOnlineStore)
-                    platform.DoScrap()
-                    platform.CreateMarkdownFile()
-                    platform.CreateUrlFiles()
-                End Using
+                Console.WriteLine($"{i + 1} of {platforms.Count} platforms | Running scraping work for platform: {platforms(i).PlatformInfo.Name}...")
+                Console.WriteLine("")
 
-            ElseIf TypeOf platforms(i) Is PlatformBase Then
-                Using platform As PlatformBase = DirectCast(platforms(i), PlatformBase)
-                    platform.DoScrap()
-                    platform.CreateMarkdownFile()
-                    platform.CreateUrlFiles()
-                End Using
+                If TypeOf platforms(i) Is PlatformBaseWithOnlineStore Then
+                    Using platform As PlatformBaseWithOnlineStore = DirectCast(platforms(i), PlatformBaseWithOnlineStore)
+                        platform.DoScrap()
+                        platform.CreateMarkdownFile()
+                        platform.CreateUrlFiles()
+                    End Using
 
-                ' Delete temporary Urls directory.
-                Dim outputUrlsDir As New DirectoryInfo($"{My.Application.Info.DirectoryPath}\Output\Urls")
-                If outputUrlsDir.Exists Then
-                    Try
-                        FileIO.FileSystem.DeleteDirectory(outputUrlsDir.FullName, FileIO.UIOption.OnlyErrorDialogs, FileIO.RecycleOption.DeletePermanently)
-                    Catch ex As Exception
-                    End Try
+                ElseIf TypeOf platforms(i) Is PlatformBase Then
+                    Using platform As PlatformBase = DirectCast(platforms(i), PlatformBase)
+                        platform.DoScrap()
+                        platform.CreateMarkdownFile()
+                        platform.CreateUrlFiles()
+                    End Using
+
+                    ' Delete temporary Urls directory.
+                    Dim outputUrlsDir As New DirectoryInfo($"{My.Application.Info.DirectoryPath}\Output\Urls")
+                    If outputUrlsDir.Exists Then
+                        Try
+                            FileIO.FileSystem.DeleteDirectory(outputUrlsDir.FullName, FileIO.UIOption.OnlyErrorDialogs, FileIO.RecycleOption.DeletePermanently)
+                        Catch ex As Exception
+                        End Try
+                    End If
+                Else
+                    ' Prevents an improbable unexpected type cast issue.
+                    Throw New NotImplementedException()
+
                 End If
-            Else
-                ' Prevents an improbable unexpected type cast issue.
-                Throw New NotImplementedException()
 
-            End If
+            Next i
 
-        Next i
+        End Using
 
         Console.WriteLine("All the scraping work has been completed!. Press any key to close this program...")
         Console.ReadKey(intercept:=True)

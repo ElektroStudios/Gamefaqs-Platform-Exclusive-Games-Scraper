@@ -70,6 +70,7 @@
     <Reference Include="System.IO.Pipelines, Version=10.0.0.9, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IO.Pipelines.10.0.9\lib\net462\System.IO.Pipelines.dll</HintPath>
     </Reference>
+    <Reference Include="System.Management" />
     <Reference Include="System.Memory, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
     </Reference>
@@ -101,15 +102,23 @@
     <Import Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\UtilFlareSolverr.vb" />
+    <Compile Include="Helpers\ConsoleTerminationWatcher.vb" />
     <Compile Include="Model\PlatformType.vb" />
     <Compile Include="Model\PlatformBaseWithOnlineStore.vb" />
     <Compile Include="Model\PlatformBase.vb" />
     <Compile Include="Model\ExitCodes.vb" />
+    <Compile Include="Platforms\Handheld consoles\Nintendo Switch 2.vb" />
     <Compile Include="Platforms\Home consoles\CreatiVision.vb" />
     <Compile Include="Platforms\Home consoles\Channel F.vb" />
     <Compile Include="Platforms\Home consoles\Cassette Vision.vb" />
     <Compile Include="Platforms\Home consoles\Super Vision 8000.vb" />
     <Compile Include="Platforms\Home consoles\Virtual Boy.vb" />
+    <Compile Include="Platforms\Other\Blackberry.vb" />
+    <Compile Include="Platforms\Other\OculusQuest.vb" />
+    <Compile Include="Platforms\Other\Windows Mobile.vb" />
+    <Compile Include="Platforms\Personal Computers\BBC Micro.vb" />
+    <Compile Include="Platforms\Personal Computers\Commodore PET.vb" />
     <Compile Include="Platforms\Personal Computers\Sord M5.vb" />
     <Compile Include="Platforms\Handheld consoles\Microvision.vb" />
     <Compile Include="Platforms\Home consoles\VC 4000.vb" />

@@ -7,7 +7,7 @@ Imports System.Diagnostics
 #Region " PlatformInfo "
 
 ''' <summary>
-''' Represents basic information of a platform from Gamefaqs website.
+''' Represents basic information of a platform from GameFAQs website.
 ''' </summary>
 Friend NotInheritable Class PlatformInfo
 
@@ -19,7 +19,7 @@ Friend NotInheritable Class PlatformInfo
     Friend ReadOnly Property Name As String
 
     ''' <summary>
-    ''' Gets the name of this platform typed as it appears in the Gamefaqs url.
+    ''' Gets the name of this platform typed as it appears in the GameFAQs url.
     ''' </summary>
     Friend ReadOnly Property HttpName As String
 
@@ -29,7 +29,7 @@ Friend NotInheritable Class PlatformInfo
     Friend ReadOnly Property PlatformType As PlatformType
 
     ''' <summary>
-    ''' Gets the Gamefaqs url that points to this platform.
+    ''' Gets the GameFAQs url that points to this platform.
     ''' </summary>
     Friend ReadOnly Property BaseUrl As Uri
         Get
@@ -38,7 +38,7 @@ Friend NotInheritable Class PlatformInfo
     End Property
 
     ''' <summary>
-    ''' Gets the Gamefaqs url that points to the "all games" list for this platform.
+    ''' Gets the GameFAQs url that points to the "all games" list for this platform.
     ''' </summary>
     Friend ReadOnly Property AllGamesUrl As Uri
         <DebuggerStepThrough>
@@ -66,7 +66,7 @@ Friend NotInheritable Class PlatformInfo
     ''' </param>
     ''' 
     ''' <param name="httpName">
-    ''' The name of this platform typed as it appears in the Gamefaqs url (e.g. ps3).
+    ''' The name of this platform typed as it appears in the GameFAQs url (e.g. ps3).
     ''' </param>
     <DebuggerNonUserCode>
     Friend Sub New(name As String, httpName As String, platformType As PlatformType)

@@ -14,6 +14,7 @@ Imports System.Globalization
 Imports System.IO
 Imports System.IO.Compression
 Imports System.Linq
+Imports System.Net
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
@@ -22,26 +23,42 @@ Imports HtmlAgilityPack
 
 #End Region
 
-#Region " GamefaqsUtil "
+#Region " GameFAQsUtil "
 
 ''' <summary>
-''' Gamefaqs Scraping and File Creation Utilities.
+''' GameFAQs Scraping and File Creation Utilities.
 ''' </summary>
 <HideModuleName>
-Friend Module GamefaqsUtil
+Friend Module GameFAQsUtil
 
 #Region " Public Fields "
 
     ''' <summary>
-    ''' User-Agent used to let Gamefaqs server identify this scraper.
+    ''' User-Agent used to let GameFAQs server identify this scraper.
     ''' </summary>
-    Friend Const ScraperUserAgent As String =
-            "ExtractGamesListBot/1.0.1 (+https://github.com/ElektroStudios/Gamefaqs-Platform-Exclusive-Games-Scraper) BasedOnDotNetHttpClient"
+    Friend Const ScraperUserAgent As String = "ExclusiveGamesLists/2.0 tHttpClient"
+
+    'Friend Const ScraperUserAgent As String = "ExclusiveGamesListScraper/1.0.1 (+https://github.com/ElektroStudios/Gamefaqs-Platform-Exclusive-Games-Scraper) BasedOnDotNetHttpClient"
 
     ''' <summary>
     ''' The text encoding used to create the output files (Markdown, URL, etc.).
     ''' </summary>
     Friend ReadOnly TextEncoding As Encoding = New UTF8Encoding(encoderShouldEmitUTF8Identifier:=True)
+
+    ''' <summary>
+    ''' The retry delay in seconds to wait before retrying a failed request to GameFAQs server.
+    ''' </summary>
+    Friend ReadOnly RetryDelaySeconds As Integer = 30
+
+    ''' <summary>
+    ''' The 
+    ''' </summary>
+    Friend ReadOnly SleepRandomMinMilliseconds As Integer = 600
+
+    ''' <summary>
+    ''' The 
+    ''' </summary>
+    Friend ReadOnly SleepRandomMaxMilliseconds As Integer = 1400
 
 #End Region
 
@@ -63,10 +80,28 @@ Friend Module GamefaqsUtil
     Friend Function ScrapLastPageNumber(uri As Uri) As Integer
 
         Dim htmlSource As String = Nothing
-        MiscUtil.DownloadHtmlPageWithRetry(uri, htmlSource)
-
         Dim htmlDoc As New HtmlDocument()
-        htmlDoc.LoadHtml(htmlSource)
+
+        ' Cold Start Protection for the pagination fetch
+        Do
+            htmlSource = Nothing
+            MiscUtil.DownloadHtmlPageWithRetry(uri, htmlSource)
+
+            htmlDoc.LoadHtml(htmlSource)
+
+            ' Check if the core table loaded (proof that the dynamic DOM actually rendered)
+            Dim titleNodes As HtmlNodeCollection = htmlDoc.DocumentNode.SelectNodes("//td[@class='rtitle']")
+
+            If titleNodes IsNot Nothing Then
+                Exit Do ' Success, dynamic content fully rendered.
+            End If
+
+            Console.WriteLine($"[WARNING] Can't locate game title elements in html source-code of uri: {uri.AbsoluteUri}")
+            Console.WriteLine("FlareSolverr returned an incomplete DOM while checking pagination. Invalidating session and retrying...")
+
+            MiscUtil.IsSessionInitialized = False
+            Thread.Sleep(TimeSpan.FromSeconds(GameFAQsUtil.RetryDelaySeconds))
+        Loop
 
         Dim paginateXpath As String = "//ul[@class='paginate']/li"
         Dim paginateNode As HtmlNode = htmlDoc.DocumentNode.SelectSingleNode(paginateXpath)
@@ -108,7 +143,7 @@ Friend Module GamefaqsUtil
     ''' 
     ''' <param name="refMultiplatformGamesList">
     ''' A <see langword="Byref"/> <see cref="List(Of GameInfo)"/> object used to populate 
-    ''' the multi-platform games that were released on the specified platform in <paramref name="platform"/> parameter.
+    ''' the multiplatform games that were released on the specified platform in <paramref name="platform"/> parameter.
     ''' </param>
     <DebuggerStepThrough>
     Friend Sub ScrapGames(description As String, platform As PlatformInfo, uri As Uri,
@@ -118,7 +153,7 @@ Friend Module GamefaqsUtil
         refExclusiveGamesList = New List(Of GameInfo)
         refMultiplatformGamesList = New List(Of GameInfo)
 
-        Dim lastPageNumber As Integer = GamefaqsUtil.ScrapLastPageNumber(uri)
+        Dim lastPageNumber As Integer = GameFAQsUtil.ScrapLastPageNumber(uri)
         Dim currentTotalEntryCount As Integer
         Dim startTime As Date = Date.Now
 
@@ -139,22 +174,40 @@ Friend Module GamefaqsUtil
             Console.WriteLine("")
 
             Dim pageHtmlSource As String = Nothing
-            MiscUtil.DownloadHtmlPageWithRetry(pageUri, pageHtmlSource)
-
-            Dim htmlDoc As New HtmlDocument
-            htmlDoc.LoadHtml(pageHtmlSource)
-
+            Dim htmlDoc As New HtmlDocument()
+            Dim titleNodes As HtmlNodeCollection = Nothing
             Const titleXpath As String = "//td[@class='rtitle']"
-            Dim titleNodes As HtmlNodeCollection = htmlDoc.DocumentNode.SelectNodes(titleXpath)
-            If titleNodes Is Nothing Then
-                If (pageIndex <> lastPageNumber - 1) Then
-                    MiscUtil.PrintErrorAndExit($"Can't locate game title elements (XPath: ""{titleXpath}"") in html source-code of uri: {pageUri}", exitcode:=ExitCodes.ExitCodeXPathNotFound)
-                Else
+
+            ' Internal retry loop for incomplete dynamic DOMs (Cold Start Protection)
+            Do
+                pageHtmlSource = Nothing
+                MiscUtil.DownloadHtmlPageWithRetry(pageUri, pageHtmlSource)
+
+                htmlDoc.LoadHtml(pageHtmlSource)
+                titleNodes = htmlDoc.DocumentNode.SelectNodes(titleXpath)
+
+                If titleNodes IsNot Nothing Then
+                    Exit Do ' Success, dynamic content fully rendered.
+                End If
+
+                If (pageIndex = lastPageNumber - 1) Then
                     ' Sometimes the last page exists but it does not contain any entry,
                     ' for example: https://gamefaqs.gamespot.com/atari5200/category/999-all?page=1
                     ' so we just finish the work.
-                    Exit For
+                    Exit Do
                 End If
+
+                ' If we reach here, it's not the last page, but the nodes are missing.
+                Console.WriteLine($"[WARNING] Can't locate game title elements (XPath: ""{titleXpath}"") in html source-code of uri: {pageUri}")
+                Console.WriteLine("FlareSolverr likely returned an incomplete DOM. Invalidating session and retrying...")
+
+                MiscUtil.IsSessionInitialized = False ' Force browser rotation to fix the glitch
+                Thread.Sleep(TimeSpan.FromSeconds(GameFAQsUtil.RetryDelaySeconds))
+            Loop
+
+            ' Handle the legitimate empty last page scenario
+            If titleNodes Is Nothing AndAlso (pageIndex = lastPageNumber - 1) Then
+                Exit For
             End If
 
             ' Iterate game entry urls.
@@ -163,12 +216,12 @@ Friend Module GamefaqsUtil
 
             For Each titleNode As HtmlNode In titleNodes
                 Dim ETA As String =
-                    GamefaqsUtil.CalculateETA(startTime, pageIndex, Interlocked.Increment(thisPageCurrentEntryCount),
+                    GameFAQsUtil.CalculateETA(startTime, pageIndex, Interlocked.Increment(thisPageCurrentEntryCount),
                                               lastPageNumber, Interlocked.Increment(currentTotalEntryCount),
                                               If(pageIndex <> (lastPageNumber - 1), 100, thisPagelastEntryCount))
 
                 Dim nodeInnerHtml As String = titleNode.InnerHtml
-                Dim entryTitle As String = titleNode.InnerText.Trim()
+                Dim entryTitle As String = WebUtility.HtmlDecode(titleNode.InnerText.Trim())
 
                 Console.WriteLine($"Scraping {description}... | ETA {ETA} | Page {pageIndex + 1}/{lastPageNumber} | Entry {currentTotalEntryCount} ({thisPageCurrentEntryCount}/{thisPagelastEntryCount}) | {entryTitle}")
                 ' Console.WriteLine($"Url: {entryUrl}")
@@ -181,14 +234,14 @@ Friend Module GamefaqsUtil
                     Continue For
 
                 Else ' Released game.
-                    MiscUtil.SleepRandom(100, 600)
+                    MiscUtil.SleepRandom(GameFAQsUtil.SleepRandomMinMilliseconds, GameFAQsUtil.SleepRandomMaxMilliseconds)
 
                     ' Note that the "titleNode.InnerText" value can return a game title in Japanese or other language,
                     ' so this value can't be considered as the proper game title name to use.
                     Dim entryBaseUrl As String = titleNode.SelectSingleNode("a").Attributes("href").Value
                     Dim entryUrl As New Uri($"https://gamefaqs.gamespot.com{entryBaseUrl}")
 
-                    ' Some entry urls are duplicated in the Gamefaqs list,
+                    ' Some entry urls are duplicated in the GameFAQs list,
                     ' such as one entry with Japanese title and the other with English title,
                     ' all duplicates points to the same entry url,
                     ' so we ensure that the entry url does not already exists in the list.
@@ -227,7 +280,7 @@ Friend Module GamefaqsUtil
                     Dim genre As String =
                         genreNode?.InnerHtml.Replace("<b>Genre:</b> ", "").
                                              Replace($"<a href=""/{platform.BaseUrl.ToString().TrimEnd("/"c).Split("/"c).Last}", $"<a href=""{platform.BaseUrl}").
-                                             Replace(""">", """ target=""_blank"" rel=""noopener noreferrer"">").Trim()
+                                             Replace(""">", """ target=""_blank"" rel=""nofollow noopener noreferrer"">").Trim()
 
                     If String.IsNullOrWhiteSpace(genre) Then
                         genre = "N/A"
@@ -258,7 +311,7 @@ Friend Module GamefaqsUtil
                     Dim releaseDate As String =
                         releaseDateNode?.InnerHtml.Replace("<b>Release:</b> ", "").
                                                    Replace($"<a href=""/{platform.BaseUrl.ToString().TrimEnd("/"c).Split("/"c).Last}", $"<a href=""{platform.BaseUrl}").
-                                                   Replace(""">", """ target=""_blank"" rel=""noopener noreferrer"">").Trim()
+                                                   Replace(""">", """ target=""_blank"" rel=""nofollow noopener noreferrer"">").Trim()
 
                     If String.IsNullOrEmpty(releaseDate) Then
                         releaseDate = "N/A"
@@ -267,7 +320,7 @@ Friend Module GamefaqsUtil
                         Dim dateString As String = releaseDateNode?.InnerText.Replace("Release: ", "")
 
                         If dateString.Equals("Canceled", StringComparison.OrdinalIgnoreCase) Then
-                            ' This case it seems to occur only on multi-platform games
+                            ' This case it seems to occur only on multiplatform games
                             ' whose release was canceled on this platform.
                             Continue For
 
@@ -281,7 +334,7 @@ Friend Module GamefaqsUtil
                             releaseDate = dateRegex.Replace(releaseDate, $""">TBA</a>")
 
                         Else
-                            Dim year As String = GamefaqsUtil.GetYearFromDateString(dateString)
+                            Dim year As String = GameFAQsUtil.GetYearFromDateString(dateString)
                             releaseDate = dateRegex.Replace(releaseDate, $""">{year}</a>")
 
                         End If
@@ -293,7 +346,8 @@ Friend Module GamefaqsUtil
                     Const pageTitleXpath As String = "//h1[@class='page-title']"
 
                     Dim pageTitleNode As HtmlNode = gameEntryHtmlDoc.DocumentNode.SelectSingleNode(pageTitleXpath)
-                    Dim pageTitle As String = pageTitleNode?.InnerText
+                    Dim pageTitle As String = WebUtility.HtmlDecode(pageTitleNode?.InnerText.Trim())
+
                     If String.IsNullOrWhiteSpace(pageTitle) Then
                         MiscUtil.PrintErrorAndExit($"Can't locate game title / page title element (XPath: ""{pageTitleNode}"") in html source-code of uri: {entryUrl}", exitcode:=ExitCodes.ExitCodeXPathNotFound)
                     End If
@@ -318,7 +372,7 @@ Friend Module GamefaqsUtil
             Next titleNode
 
             Console.WriteLine("")
-            MiscUtil.SleepRandom(100, 600)
+            MiscUtil.SleepRandom(GameFAQsUtil.SleepRandomMinMilliseconds, GameFAQsUtil.SleepRandomMaxMilliseconds)
         Next pageIndex
 
     End Sub
@@ -345,7 +399,7 @@ Friend Module GamefaqsUtil
     Friend Function ScrapOnlyEntryUrls(description As String, platform As PlatformInfo, uri As Uri) As List(Of GameInfo)
 
         Dim gamesList As New List(Of GameInfo)
-        Dim lastPageNumber As Integer = GamefaqsUtil.ScrapLastPageNumber(uri)
+        Dim lastPageNumber As Integer = GameFAQsUtil.ScrapLastPageNumber(uri)
 
         Dim currentTotalEntryCount As Integer
         Dim startTime As Date = Date.Now
@@ -364,22 +418,36 @@ Friend Module GamefaqsUtil
             Console.WriteLine("")
 
             Dim pageHtmlSource As String = Nothing
-            MiscUtil.DownloadHtmlPageWithRetry(pageUri, pageHtmlSource)
-
-            Dim htmlDoc As New HtmlDocument
-            htmlDoc.LoadHtml(pageHtmlSource)
-
+            Dim htmlDoc As New HtmlDocument()
+            Dim titleNodes As HtmlNodeCollection
             Const titleXpath As String = "//td[@class='rtitle']"
-            Dim titleNodes As HtmlNodeCollection = htmlDoc.DocumentNode.SelectNodes(titleXpath)
-            If titleNodes Is Nothing Then
-                If (pageIndex <> lastPageNumber - 1) Then
-                    MiscUtil.PrintErrorAndExit($"Can't locate game title elements (XPath: ""{titleXpath}"") in html source-code of uri: {pageUri}", exitcode:=ExitCodes.ExitCodeXPathNotFound)
-                Else
-                    ' Sometimes the last page exists but it does not contain any entry,
-                    ' for example: https://gamefaqs.gamespot.com/atari5200/category/999-all?page=1
-                    ' so we just finish the work.
-                    Exit For
+
+            ' Internal retry loop for incomplete dynamic DOMs (Cold Start Protection) ---
+            Do
+                pageHtmlSource = Nothing
+                MiscUtil.DownloadHtmlPageWithRetry(pageUri, pageHtmlSource)
+
+                htmlDoc.LoadHtml(pageHtmlSource)
+                titleNodes = htmlDoc.DocumentNode.SelectNodes(titleXpath)
+
+                If titleNodes IsNot Nothing Then
+                    Exit Do
                 End If
+
+                If (pageIndex = lastPageNumber - 1) Then
+                    ' Sometimes the last page exists but it does not contain any entry.
+                    Exit Do
+                End If
+
+                Console.WriteLine($"[WARNING] Can't locate game title elements (XPath: ""{titleXpath}"") in html source-code of uri: {pageUri}")
+                Console.WriteLine("FlareSolverr likely returned an incomplete DOM. Invalidating session and retrying...")
+
+                MiscUtil.IsSessionInitialized = False
+                Thread.Sleep(TimeSpan.FromSeconds(GameFAQsUtil.RetryDelaySeconds))
+            Loop
+
+            If titleNodes Is Nothing AndAlso (pageIndex = lastPageNumber - 1) Then
+                Exit For
             End If
 
             ' Iterate game entry urls.
@@ -388,12 +456,12 @@ Friend Module GamefaqsUtil
 
             For Each titleNode As HtmlNode In titleNodes
                 Dim ETA As String =
-                    GamefaqsUtil.CalculateETA(startTime, pageIndex, Interlocked.Increment(thisPageCurrentEntryCount),
+                    GameFAQsUtil.CalculateETA(startTime, pageIndex, Interlocked.Increment(thisPageCurrentEntryCount),
                                               lastPageNumber, Interlocked.Increment(currentTotalEntryCount),
                                               If(pageIndex <> (lastPageNumber - 1), 100, thisPagelastEntryCount))
 
                 Dim nodeInnerHtml As String = titleNode.InnerHtml
-                Dim entryTitle As String = titleNode.InnerText.Trim()
+                Dim entryTitle As String = WebUtility.HtmlDecode(titleNode.InnerText.Trim())
 
                 Console.WriteLine($"Scraping {description}... | ETA {ETA} | Page {pageIndex + 1}/{lastPageNumber} | Entry {currentTotalEntryCount} ({thisPageCurrentEntryCount}/{thisPagelastEntryCount}) | {entryTitle}")
                 ' Console.WriteLine($"Url: {entryUrl}")
@@ -423,7 +491,7 @@ Friend Module GamefaqsUtil
             Next titleNode
 
             Console.WriteLine("")
-            MiscUtil.SleepRandom(100, 600)
+            MiscUtil.SleepRandom(GameFAQsUtil.SleepRandomMinMilliseconds, GameFAQsUtil.SleepRandomMaxMilliseconds)
         Next pageIndex
 
         Return gamesList
@@ -476,7 +544,7 @@ Friend Module GamefaqsUtil
 
         Dim entryCount As Integer = 0
         For Each game As GameInfo In games
-            sb.AppendLine($"|{Interlocked.Increment(entryCount)}|<a href=""{game.EntryUrl}"" target=""_blank"" rel=""noopener noreferrer"">{game.Title.Replace("|"c, "\|").Replace("`"c, "\`").Replace(":)", "\:)").Replace(":(", "\:(")}</a>|{game.ReleaseDate.Replace("|"c, "\|").Replace("`"c, "\`")}|{game.Genre.Replace("|"c, "\|").Replace("`"c, "\`")}|")
+            sb.AppendLine($"|{Interlocked.Increment(entryCount)}|<a href=""{game.EntryUrl}"" target=""_blank"" rel=""nofollow noopener noreferrer"">{game.Title.Replace("|"c, "\|").Replace("`"c, "\`").Replace(":)", "\:)").Replace(":(", "\:(")}</a>|{game.ReleaseDate.Replace("|"c, "\|").Replace("`"c, "\`")}|{game.Genre.Replace("|"c, "\|").Replace("`"c, "\`")}|")
         Next
 
         Return sb.ToString()
@@ -505,14 +573,15 @@ Friend Module GamefaqsUtil
             outputDir.Create()
         End If
 
+        Dim fileNameDecoded As String = WebUtility.HtmlDecode(fileName)
         Dim fullMarkdown As String = String.Join(Environment.NewLine, (From value As String In values Where Not String.IsNullOrEmpty(value)))
         fullMarkdown &= Environment.NewLine & "# End of File"
-        Dim outputFilePath As String = $"{outputDir.FullName}\{fileName}.md"
+        Dim outputFilePath As String = $"{outputDir.FullName}\{fileNameDecoded}.md"
         outputFilePath = MiscUtil.TruncateLongFilePath(outputFilePath)
 
         Console.WriteLine($"Creating markdown file: {outputFilePath.Replace("\\?\", "")}...")
         Try
-            File.WriteAllText(outputFilePath, fullMarkdown, TextEncoding)
+            File.WriteAllText(outputFilePath, fullMarkdown, GameFAQsUtil.TextEncoding)
 
         Catch ex As Exception
             MiscUtil.PrintErrorAndExit(ex.Message & Environment.NewLine &
@@ -557,15 +626,30 @@ Friend Module GamefaqsUtil
             sb.AppendLine("[InternetShortcut]")
             sb.AppendLine($"URL={game.EntryUrl}")
 
-            Dim fileName As String = MiscUtil.ConvertStringToWindowsFileName(game.Title)
-            Dim outputFilePath As String = $"{outputUrlsDir.FullName}\{fileName}.url"
+            Dim gameTitleDecoded As String = WebUtility.HtmlDecode(game.Title)
+            Dim fileName As String = MiscUtil.ConvertStringToWindowsFileName(gameTitleDecoded)
+            Dim baseFilePath As String = $"{outputUrlsDir.FullName}\{fileName}"
+            Dim extension As String = ".url"
+
+            Dim outputFilePath As String = $"{baseFilePath}{extension}"
+
+            If File.Exists(outputFilePath) Then
+                Dim counter As Integer = 1
+
+                ' Loop until a unique filename is found.
+                Do
+                    outputFilePath = $"{baseFilePath} ({counter}){extension}"
+                    counter += 1
+                Loop While File.Exists(outputFilePath)
+            End If
+
             outputFilePath = MiscUtil.TruncateLongFilePath(outputFilePath)
 
 #If DEBUG Then
             ' Console.WriteLine($"Creating URL file: {outputFilePath.Replace("\\?\", "")}...")
 #End If
             Try
-                File.WriteAllText(outputFilePath, sb.ToString(), TextEncoding)
+                File.WriteAllText(outputFilePath, sb.ToString(), GameFAQsUtil.TextEncoding)
 
             Catch ex As Exception
                 MiscUtil.PrintErrorAndExit(ex.Message & Environment.NewLine &
@@ -598,7 +682,7 @@ Friend Module GamefaqsUtil
 #Region " Private Methods "
 
     ''' <summary>
-    ''' Calculates the ETA (Estimated Time of Arrival) for the <see cref="GamefaqsUtil.ScrapGames"/> method to finish.
+    ''' Calculates the ETA (Estimated Time of Arrival) for the <see cref="GameFAQsUtil.ScrapGames"/> method to finish.
     ''' </summary>
     ''' <param name="startTime">
     ''' The start time

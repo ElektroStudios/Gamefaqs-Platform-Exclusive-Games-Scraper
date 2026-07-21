@@ -7,7 +7,7 @@ Imports System.Diagnostics
 #Region " GameInfo "
 
 ''' <summary>
-''' Represents basic information of a scraped game from Gamefaqs website.
+''' Represents basic information of a scraped game from GameFAQs website.
 ''' </summary>
 Friend NotInheritable Class GameInfo
 
@@ -24,7 +24,7 @@ Friend NotInheritable Class GameInfo
     Friend Property Title As String
 
     ''' <summary>
-    ''' Gets or sets the Gamefaqs entry url for this game.
+    ''' Gets or sets the GameFAQs entry url for this game.
     ''' </summary>
     Friend Property EntryUrl As Uri
 

@@ -59,7 +59,7 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
     Protected exclusiveOnlineStoreGames_ As Dictionary(Of String, List(Of GameInfo))
 
     ''' <summary>
-    ''' Gets the multi-platform games that were released on this platform and distributed via its online store.
+    ''' Gets the multiplatform games that were released on this platform and distributed via its online store.
     ''' <para></para>
     ''' Note: You must call method <see cref="PlatformBaseWithOnlineStore.DoScrap"/> to initialize the value of this property.
     ''' </summary>
@@ -73,7 +73,7 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
     ''' <summary>
     ''' ( Backing Field )
     ''' <para></para>
-    ''' The multi-platform games that were released on this platform and distributed via its online store.
+    ''' The multiplatform games that were released on this platform and distributed via its online store.
     ''' </summary>
     Protected multiPlatformOnlineStoreGames_ As Dictionary(Of String, List(Of GameInfo))
 
@@ -96,8 +96,8 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
     Friend Overrides Sub DoScrap()
         Me.scrapCompleted = False
 
-        ' Scrap exclusive and multi-platform games.
-        GamefaqsUtil.ScrapGames(
+        ' Scrap exclusive and multiplatform games.
+        GameFAQsUtil.ScrapGames(
             $"{Me.PlatformInfo.Name} Games", Me.PlatformInfo,
             Me.PlatformInfo.AllGamesUrl,
             Me.exclusiveGames_, Me.multiPlatformGames_)
@@ -106,7 +106,7 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
         Dim allOnlineStoreGames As New Dictionary(Of String, List(Of GameInfo))
         For Each pair As KeyValuePair(Of Integer, String) In Me.MarketDistributionIds
             Dim onlineStoreGames As List(Of GameInfo) =
-                GamefaqsUtil.ScrapOnlyEntryUrls(
+                GameFAQsUtil.ScrapOnlyEntryUrls(
                     $"{Me.PlatformInfo.Name} ({pair.Value}) Games (only entry urls)", Me.PlatformInfo,
                     New Uri($"{Me.PlatformInfo.AllGamesUrl}?dist={pair.Key}"))
 
@@ -129,7 +129,7 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
             Me.exclusiveOnlineStoreGames_.Add(pair.Key, onlineStoreGames)
         Next pair
 
-        ' Build Multi-platform Online Store Games lists.
+        ' Build Multiplatform Online Store Games lists.
         Me.multiPlatformOnlineStoreGames_ = New Dictionary(Of String, List(Of GameInfo))
         For Each pair As KeyValuePair(Of String, List(Of GameInfo)) In allOnlineStoreGames
             Dim onlineStoreGameUrls As Uri() =
@@ -154,7 +154,7 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
                               Contains(game.EntryUrl)
                 )?.ToList()
 
-        ' Filter out Multi-platform Online Store Games from Multi-platform Games list.
+        ' Filter out Multiplatform Online Store Games from Multiplatform Games list.
         Me.multiPlatformGames_ =
                 (From game As GameInfo In Me.multiPlatformGames_
                  Where Not Me.multiPlatformOnlineStoreGames_.Values.
@@ -187,20 +187,20 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
             Next key
         End If
 
-        ' Build Multi-platform Compilations list.
+        ' Build Multiplatform Compilations list.
         Me.multiPlatformCompilations_ =
             (From game As GameInfo In Me.multiPlatformGames_?.DefaultIfEmpty(New GameInfo()).Concat(Me.multiPlatformOnlineStoreGames_.Values.SelectMany(Of GameInfo)(Function(list) list))
              Where game.Genre.Contains("Compilation")
             )?.ToList()
 
         If Me.multiPlatformCompilations_?.Any() Then
-            ' Filter out Multi-platform Compilations from Multi-platform Games list.
+            ' Filter out Multiplatform Compilations from Multiplatform Games list.
             Me.multiPlatformGames_ =
                 (From game As GameInfo In Me.multiPlatformGames_
                  Where Not Me.multiPlatformCompilations_?.Select(Function(item As GameInfo) item.EntryUrl).Contains(game.EntryUrl)
                 ).ToList()
 
-            ' Filter out Multi-platform Compilations from Multi-platform Online Store Games lists.
+            ' Filter out Multiplatform Compilations from Multiplatform Online Store Games lists.
             Dim keysMultiplatform As String() = Me.multiPlatformOnlineStoreGames_?.Keys.ToArray()
             For Each key As String In keysMultiplatform
                 Me.multiPlatformOnlineStoreGames_(key) =
@@ -242,48 +242,48 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
 
         Dim exclusiveGamesTable As String =
             If(Me.exclusiveGames_.Any(),
-               GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Games",
+               GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Games",
                                                Me.exclusiveGames_), "")
 
         Dim exclusiveOnlineStoreGamesTables As New List(Of String)
         For Each pair As KeyValuePair(Of String, List(Of GameInfo)) In Me.exclusiveOnlineStoreGames_
             exclusiveOnlineStoreGamesTables.Add(If(pair.Value?.Any(),
-                GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Games ({pair.Key})", pair.Value,
+                GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Games ({pair.Key})", pair.Value,
                                                 extraHeaderContent:="Note: Some games in this table may have also been released " &
                                                                     "in physical format on this platform, but they are categorized " &
-                                                                    $"on Gamefaqs as games distributed via '{pair.Key}'."), ""))
+                                                                    $"on GameFAQs as games distributed via '{pair.Key}'."), ""))
         Next pair
 
         Dim exclusiveCompilationsTable As String =
             If(Me.exclusiveCompilations_.Any(),
-               GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Compilations",
+               GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Compilations",
                                                Me.exclusiveCompilations_), "")
 
-        GamefaqsUtil.CreateMarkdownFile(platformName, $"{platformName} (Exclusives)", Me.MarkdownHeaderForExclusiveTitles,
+        GameFAQsUtil.CreateMarkdownFile(platformName, $"{platformName} (Exclusives)", Me.MarkdownHeaderForExclusiveTitles,
                                         exclusiveGamesTable, String.Join(Environment.NewLine, exclusiveOnlineStoreGamesTables), exclusiveCompilationsTable)
 
-        ' Write multi-platform titles.
+        ' Write multiplatform titles.
 
         Dim multiPlatformGamesTable As String =
             If(Me.multiPlatformGames_.Any(),
-               GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Multi-platform Games",
+               GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Multiplatform Games",
                                                Me.multiPlatformGames_), "")
 
         Dim multiPlatformOnlineStoreGamesTables As New List(Of String)
         For Each pair As KeyValuePair(Of String, List(Of GameInfo)) In Me.multiPlatformOnlineStoreGames_
             multiPlatformOnlineStoreGamesTables.Add(If(pair.Value?.Any(),
-                GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Multi-platform Games ({pair.Key})", pair.Value,
+                GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Multiplatform Games ({pair.Key})", pair.Value,
                                                 extraHeaderContent:="Note: Some games in this table may have also been released " &
                                                                     "in physical format on this platform, but they are categorized " &
-                                                                    $"on Gamefaqs as games distributed via '{pair.Key}'."), ""))
+                                                                    $"on GameFAQs as games distributed via '{pair.Key}'."), ""))
         Next pair
 
         Dim multiPlatformCompilationsTable As String =
             If(Me.multiPlatformCompilations_.Any(),
-               GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Multi-platform Compilations",
+               GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Multiplatform Compilations",
                                                Me.multiPlatformCompilations_), "")
 
-        GamefaqsUtil.CreateMarkdownFile(platformName, $"{platformName} (Multi-platform)", Me.MarkdownHeaderForMultiPlatformTitles,
+        GameFAQsUtil.CreateMarkdownFile(platformName, $"{platformName} (Multiplatform)", Me.MarkdownHeaderForMultiPlatformTitles,
                                         multiPlatformGamesTable, String.Join(Environment.NewLine, multiPlatformOnlineStoreGamesTables), multiPlatformCompilationsTable)
 
     End Sub
@@ -293,20 +293,20 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
     ''' </summary>
     <DebuggerStepThrough>
     Friend Overrides Sub CreateUrlFiles()
-        ' Create Urls from exclusive and multi-platform titles.
+        ' Create Urls from exclusive and multiplatform titles.
         MyBase.CreateUrlFiles()
 
         Dim platformName As String = MiscUtil.ConvertStringToWindowsFileName(Me.PlatformInfo.Name)
 
         ' Create Url files from exclusive online store titles.
         For Each pair As KeyValuePair(Of String, List(Of GameInfo)) In Me.exclusiveOnlineStoreGames_
-            GamefaqsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Exclusive Games ({pair.Key})",
+            GameFAQsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Exclusive Games ({pair.Key})",
                                         pair.Value)
         Next pair
 
-        ' Create Url files from multi-platform online store titles.
+        ' Create Url files from multiplatform online store titles.
         For Each pair As KeyValuePair(Of String, List(Of GameInfo)) In Me.multiPlatformOnlineStoreGames_
-            GamefaqsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Multi-platform Games ({pair.Key})",
+            GameFAQsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Multiplatform Games ({pair.Key})",
                                         pair.Value)
         Next pair
     End Sub

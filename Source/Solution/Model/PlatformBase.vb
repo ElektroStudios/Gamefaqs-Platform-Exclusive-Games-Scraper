@@ -65,7 +65,7 @@ _Platform exclusivity refers to the status of a video game being developed for a
 
 -----------------------------
 
- - The following table of platform exclusive games was generated programmatically by scraping content from Gamefaqs website: 
+ - The following table of platform exclusive games was generated programmatically by scraping content from GameFAQs website: 
 
     - {Me.PlatformInfo.AllGamesUrl}
 
@@ -75,33 +75,33 @@ _Platform exclusivity refers to the status of a video game being developed for a
 
  - The items in the table are ordered alphabetically by Title column. If you need to sort items in another column, you may search for custom Markdown plugins / user-scripts or convert this table to a more suitable format, such as CSV or HTML with JavaScript.
 
- - The cell entries are made up of useful hyperlinks pointing to the game entry, release date information and genre categories from Gamefaqs website.
+ - The cell entries are made up of useful hyperlinks pointing to the game entry, release date information and genre categories from GameFAQs website.
 
 -----------------------------"
         End Get
     End Property
 
     ''' <summary>
-    ''' Gets the Markdown header to use for this platform when building the MD file of multi-platform game titles.
+    ''' Gets the Markdown header to use for this platform when building the MD file of multiplatform game titles.
     ''' </summary>
     Friend ReadOnly Property MarkdownHeaderForMultiPlatformTitles As String
         <DebuggerStepThrough>
         Get
-            Return $"# List of multi-platform {Me.PlatformInfo?.Name} titles.
+            Return $"# List of multiplatform {Me.PlatformInfo?.Name} titles.
 
 > *Last updated on {Date.Now.ToString("MMMM d, yyyy", CultureInfo.GetCultureInfo("en-US"))}*
 
-_Multi-platform refers to the status of a video game being developed and released on multiple platforms._
+_Multiplatform refers to the status of a video game being developed and released on multiple platforms._
 
 -----------------------------
 
- - The following table of multi-platform games was generated programmatically by scraping content from Gamefaqs website: 
+ - The following table of multiplatform games was generated programmatically by scraping content from GameFAQs website: 
 
     - {Me.PlatformInfo.AllGamesUrl}
       
  - The items in the table are ordered alphabetically by Title column. If you need to sort items in another column, you may search for custom Markdown plugins / user-scripts or convert this table to a more suitable format, such as CSV or HTML with JavaScript.
 
- - The cell entries are made up of useful hyperlinks pointing to the game entry, release date information and genre categories from Gamefaqs website.
+ - The cell entries are made up of useful hyperlinks pointing to the game entry, release date information and genre categories from GameFAQs website.
 
 -----------------------------"
         End Get
@@ -128,10 +128,10 @@ _Multi-platform refers to the status of a video game being developed and release
     ''' <para></para>
     ''' The games that were released exclusively on this platform.
     ''' </summary>
-    Protected exclusiveGames_ As New List(Of GameInfo)
+    Protected exclusiveGames_ As List(Of GameInfo)
 
     ''' <summary>
-    ''' Gets the multi-platform games that were released on this platform.
+    ''' Gets the multiplatform games that were released on this platform.
     ''' <para></para>
     ''' Note: You must call method <see cref="PlatformBase.DoScrap"/> to initialize the value of this property.
     ''' </summary>
@@ -145,9 +145,9 @@ _Multi-platform refers to the status of a video game being developed and release
     ''' <summary>
     ''' ( Backing Field )
     ''' <para></para>
-    ''' The multi-platform games that were released on this platform.
+    ''' The multiplatform games that were released on this platform.
     ''' </summary>
-    Protected multiPlatformGames_ As New List(Of GameInfo)
+    Protected multiPlatformGames_ As List(Of GameInfo)
 
     ''' <summary>
     ''' Gets the game compilations that were released exclusively on this platform.
@@ -166,10 +166,10 @@ _Multi-platform refers to the status of a video game being developed and release
     ''' <para></para>
     ''' The game compilations that were released exclusively on this platform.
     ''' </summary>
-    Protected exclusiveCompilations_ As New List(Of GameInfo)
+    Protected exclusiveCompilations_ As List(Of GameInfo)
 
     ''' <summary>
-    ''' Gets the multi-platform game compilations that were released on this platform.
+    ''' Gets the multiplatform game compilations that were released on this platform.
     ''' <para></para>
     ''' Note: You must call method <see cref="PlatformBase.DoScrap"/> to initialize the value of this property.
     ''' </summary>
@@ -183,9 +183,9 @@ _Multi-platform refers to the status of a video game being developed and release
     ''' <summary>
     ''' ( Backing Field )
     ''' <para></para>
-    ''' The multi-platform game compilations that were released on this platform.
+    ''' The multiplatform game compilations that were released on this platform.
     ''' </summary>
-    Protected multiPlatformCompilations_ As New List(Of GameInfo)
+    Protected multiPlatformCompilations_ As List(Of GameInfo)
 
 #End Region
 
@@ -215,8 +215,8 @@ _Multi-platform refers to the status of a video game being developed and release
     Friend Overridable Sub DoScrap() Implements IPlatform.DoScrap
         Me.scrapCompleted = False
 
-        ' Scrap exclusive and multi-platform games.
-        GamefaqsUtil.ScrapGames($"{Me.PlatformInfo.Name} Games", Me.PlatformInfo, Me.PlatformInfo.AllGamesUrl,
+        ' Scrap exclusive and multiplatform games.
+        GameFAQsUtil.ScrapGames($"{Me.PlatformInfo.Name} Games", Me.PlatformInfo, Me.PlatformInfo.AllGamesUrl,
                                 Me.exclusiveGames_, Me.multiPlatformGames_)
 
         ' Build Exclusive Compilations list.
@@ -238,13 +238,13 @@ _Multi-platform refers to the status of a video game being developed and release
                 )?.ToList()
         End If
 
-        ' Build Multi-platform Compilations list.
+        ' Build Multiplatform Compilations list.
         Me.multiPlatformCompilations_ =
             (From game As GameInfo In Me.multiPlatformGames_
              Where game.Genre.Contains("Compilation")
             )?.ToList()
 
-        ' Filter out Multi-platform Compilations from Multi-platform Games list.
+        ' Filter out Multiplatform Compilations from Multiplatform Games list.
         If Me.multiPlatformCompilations_?.Any() Then
             Dim multiPlatformCompilationUrls As Uri() =
                 (From game As GameInfo In Me.multiPlatformCompilations_
@@ -283,31 +283,40 @@ _Multi-platform refers to the status of a video game being developed and release
 
         Dim exclusiveGamesTable As String =
             If(Me.exclusiveGames_.Any(),
-               GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Games",
+               GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Games",
                                                Me.exclusiveGames_), "")
 
         Dim exclusiveCompilationsTable As String =
             If(Me.exclusiveCompilations_.Any(),
-               GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Compilations",
+               GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Exclusive Compilations",
                                                Me.exclusiveCompilations_), "")
 
-        GamefaqsUtil.CreateMarkdownFile(platformName, $"{platformName} (Exclusives)", Me.MarkdownHeaderForExclusiveTitles,
-                                        exclusiveGamesTable, exclusiveCompilationsTable)
+        If Not String.IsNullOrEmpty(exclusiveGamesTable) OrElse
+           Not String.IsNullOrEmpty(exclusiveCompilationsTable) Then
 
-        ' Write multi-platform titles.
+            GameFAQsUtil.CreateMarkdownFile(platformName, $"{platformName} (Exclusives)", Me.MarkdownHeaderForExclusiveTitles,
+                                            exclusiveGamesTable, exclusiveCompilationsTable)
+        End If
+
+        ' Write multiplatform titles.
 
         Dim multiPlatformGamesTable As String =
             If(Me.multiPlatformGames_.Any(),
-               GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Multi-platform Games",
+               GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Multiplatform Games",
                                                Me.multiPlatformGames_), "")
 
         Dim multiPlatformCompilationsTable As String =
             If(Me.multiPlatformCompilations_.Any(),
-               GamefaqsUtil.BuildMarkdownTable($"{platformName}∶ Multi-platform Compilations",
+               GameFAQsUtil.BuildMarkdownTable($"{platformName}∶ Multiplatform Compilations",
                                                Me.multiPlatformCompilations_), "")
 
-        GamefaqsUtil.CreateMarkdownFile(platformName, $"{platformName} (Multi-platform)", Me.MarkdownHeaderForMultiPlatformTitles,
-                                        multiPlatformGamesTable, multiPlatformCompilationsTable)
+        If Not String.IsNullOrEmpty(multiPlatformGamesTable) OrElse
+           Not String.IsNullOrEmpty(multiPlatformCompilationsTable) Then
+
+            GameFAQsUtil.CreateMarkdownFile(platformName, $"{platformName} (Multiplatform)", Me.MarkdownHeaderForMultiPlatformTitles,
+                                            multiPlatformGamesTable, multiPlatformCompilationsTable)
+        End If
+
     End Sub
 
     ''' <summary>
@@ -321,18 +330,18 @@ _Multi-platform refers to the status of a video game being developed and release
 
         ' Create Url files from exclusive titles.
         If Me.exclusiveGames_.Any() Then
-            GamefaqsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Exclusive Games", Me.exclusiveGames_)
+            GameFAQsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Exclusive Games", Me.exclusiveGames_)
         End If
         If Me.exclusiveCompilations_.Any() Then
-            GamefaqsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Exclusive Compilations", Me.exclusiveCompilations_)
+            GameFAQsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Exclusive Compilations", Me.exclusiveCompilations_)
         End If
 
-        ' Create Url files from multi-platform titles.
+        ' Create Url files from multiplatform titles.
         If Me.multiPlatformGames_.Any() Then
-            GamefaqsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Multi-platform Games", Me.multiPlatformGames_)
+            GameFAQsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Multiplatform Games", Me.multiPlatformGames_)
         End If
         If Me.multiPlatformCompilations_.Any() Then
-            GamefaqsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Multi-platform Compilations", Me.multiPlatformCompilations_)
+            GameFAQsUtil.CreateUrlFiles(platformName, $"{platformName}∶ Multiplatform Compilations", Me.multiPlatformCompilations_)
         End If
     End Sub
 
