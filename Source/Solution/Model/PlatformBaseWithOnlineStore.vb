@@ -190,7 +190,7 @@ Friend MustInherit Class PlatformBaseWithOnlineStore : Inherits PlatformBase
         ' Build Multiplatform Compilations list.
         Me.multiPlatformCompilations_ =
             (From game As GameInfo In Me.multiPlatformGames_?.DefaultIfEmpty(New GameInfo()).Concat(Me.multiPlatformOnlineStoreGames_.Values.SelectMany(Of GameInfo)(Function(list) list))
-             Where game.Genre.Contains("Compilation")
+             Where game.Genre?.Contains("Compilation")
             )?.ToList()
 
         If Me.multiPlatformCompilations_?.Any() Then

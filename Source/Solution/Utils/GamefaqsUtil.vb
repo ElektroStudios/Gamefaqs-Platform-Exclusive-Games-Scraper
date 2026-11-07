@@ -537,15 +537,18 @@ Friend Module GameFAQsUtil
         End If
         sb.AppendLine("|Index|Title|Year|Genre|")
         sb.AppendLine("|:--:|--|--|--|")
-        If Not String.IsNullOrEmpty(footer) Then
-            sb.AppendLine()
-            sb.AppendLine(footer)
-        End If
 
         Dim entryCount As Integer = 0
         For Each game As GameInfo In games
             sb.AppendLine($"|{Interlocked.Increment(entryCount)}|<a href=""{game.EntryUrl}"" target=""_blank"" rel=""nofollow noopener noreferrer"">{game.Title.Replace("|"c, "\|").Replace("`"c, "\`").Replace(":)", "\:)").Replace(":(", "\:(")}</a>|{game.ReleaseDate.Replace("|"c, "\|").Replace("`"c, "\`")}|{game.Genre.Replace("|"c, "\|").Replace("`"c, "\`")}|")
         Next
+
+        ' The footer must be written after the table rows;
+        ' otherwise it would be inserted between the table header and its rows, breaking the table.
+        If Not String.IsNullOrEmpty(footer) Then
+            sb.AppendLine()
+            sb.AppendLine(footer)
+        End If
 
         Return sb.ToString()
     End Function
@@ -704,11 +707,15 @@ Friend Module GameFAQsUtil
     ''' The current entry count.
     ''' </param>
     ''' 
+    ''' <param name="lastPageEntryCount">
+    ''' The amount of entries in a full page, or the amount of entries in the last page when processing the last page.
+    ''' </param>
+    '''
     ''' <returns>
-    ''' A string in format "HH:mm:ss" representing the ETA.
+    ''' A string in format "d:hh:mm:ss" representing the ETA.
     ''' </returns>
     <DebuggerStepThrough>
-    Private Function CalculateETA(startTime As Date, currentPageIndex As Integer, currentEntryIndex As Integer,
+    Friend Function CalculateETA(startTime As Date, currentPageIndex As Integer, currentEntryIndex As Integer,
                                   lastPageNumber As Integer, currentEntryCount As Integer,
                                   lastPageEntryCount As Integer) As String
 

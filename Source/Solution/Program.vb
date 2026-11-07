@@ -68,13 +68,10 @@ Friend Module Program
         Console.Write(sb.ToString())
 
         Dim skipItemCount As Integer
-        Do While skipItemCount = 0 OrElse skipItemCount = 0 OrElse skipItemCount > platforms.Count
-            Dim inputSkipString As String = Console.ReadLine()
-            If Not Integer.TryParse(inputSkipString, skipItemCount) OrElse skipItemCount = 0 OrElse skipItemCount > platforms.Count Then
-                Console.WriteLine("")
-                Console.WriteLine("Invalid value, please try again:")
-                Console.Write(" --> ")
-            End If
+        Do Until Program.TryParsePlatformId(Console.ReadLine(), platforms.Count, skipItemCount)
+            Console.WriteLine("")
+            Console.WriteLine("Invalid value, please try again:")
+            Console.Write(" --> ")
         Loop
         platforms = platforms.Skip(skipItemCount - 1).ToList()
 
@@ -128,6 +125,56 @@ Friend Module Program
         Console.ReadKey(intercept:=True)
         Environment.Exit(0)
     End Sub
+
+#End Region
+
+#Region " Friend Methods "
+
+    ''' <summary>
+    ''' Parses and validates the platform id. number typed by the user in the platform selection menu.
+    ''' </summary>
+    '''
+    ''' <param name="input">
+    ''' The input string typed by the user.
+    ''' </param>
+    '''
+    ''' <param name="platformCount">
+    ''' The amount of available platforms in the selection menu.
+    ''' </param>
+    '''
+    ''' <param name="refPlatformId">
+    ''' When this method returns <see langword="True"/>, contains the parsed platform id. number,
+    ''' in range 1 to <paramref name="platformCount"/>; otherwise, contains zero.
+    ''' </param>
+    '''
+    ''' <returns>
+    ''' <see langword="True"/> if <paramref name="input"/> is a valid platform id. number;
+    ''' otherwise, <see langword="False"/>.
+    ''' </returns>
+    '''
+    ''' <exception cref="ArgumentOutOfRangeException">
+    ''' Thrown when <paramref name="platformCount"/> is less than 1.
+    ''' </exception>
+    <DebuggerStepThrough>
+    Friend Function TryParsePlatformId(input As String, platformCount As Integer, ByRef refPlatformId As Integer) As Boolean
+
+        If platformCount < 1 Then
+            Throw New ArgumentOutOfRangeException(paramName:=NameOf(platformCount), actualValue:=platformCount,
+                                                  message:="Value must be greater than zero.")
+        End If
+
+        Dim parsedValue As Integer
+        If Integer.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, parsedValue) AndAlso
+           parsedValue >= 1 AndAlso parsedValue <= platformCount Then
+
+            refPlatformId = parsedValue
+            Return True
+        End If
+
+        refPlatformId = 0
+        Return False
+
+    End Function
 
 #End Region
 

@@ -331,7 +331,7 @@ Friend Module MiscUtil
     ''' <returns>
     ''' <see langword="True"/> if the HTML patterns match a known Cloudflare challenge or waiting room; otherwise, <see langword="False"/>.
     ''' </returns>
-    Private Function IsCloudflareChallenge(htmlContent As String) As Boolean
+    Friend Function IsCloudflareChallenge(htmlContent As String) As Boolean
 
         If String.IsNullOrEmpty(htmlContent) Then
             Return False
@@ -498,6 +498,15 @@ Friend Module MiscUtil
     ''' Optional. The maximum character length that the file name can have. 
     ''' Default (and maximum) value is 255.
     ''' </param>
+    '''
+    ''' <exception cref="ArgumentNullException">
+    ''' Thrown when <paramref name="refFileInfo"/> is <see langword="Nothing"/>.
+    ''' </exception>
+    '''
+    ''' <exception cref="ArgumentException">
+    ''' Thrown when <paramref name="maxFileNameLength"/> is zero,
+    ''' or when the file name must be truncated but the file extension is too long to fit in <paramref name="maxFileNameLength"/>.
+    ''' </exception>
     <DebuggerStepThrough>
     Friend Sub TruncateLongFilePath(ByRef refFileInfo As FileInfo, Optional maxFileNameLength As Byte = 255)
 
@@ -509,8 +518,14 @@ Friend Module MiscUtil
             Throw New ArgumentException("Value must be greater than zero.", paramName:=NameOf(maxFileNameLength))
         End If
 
-        If refFileInfo.Name.Length >= maxFileNameLength Then
+        ' Note: a file name whose length is exactly equal to the maximum length is valid, so it must not be truncated.
+        If refFileInfo.Name.Length > maxFileNameLength Then
             Dim fileExt As String = refFileInfo.Extension
+            If fileExt.Length >= (maxFileNameLength - 1) Then
+                Throw New ArgumentException($"The file extension length ({fileExt.Length}) leaves no room to truncate the file name to {maxFileNameLength} characters.",
+                                            paramName:=NameOf(maxFileNameLength))
+            End If
+
             Dim fileName As String = refFileInfo.Name.Substring(0, maxFileNameLength - 1 - fileExt.Length) & $"…{fileExt}"
 
             Dim directoryName As String = Path.GetDirectoryName(refFileInfo.FullName)
